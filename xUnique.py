@@ -111,7 +111,7 @@ class XUnique(object):
 
     def replace_uuids_with_file(self):
         print 'replace UUIDs and remove unused UUIDs'
-        uuid_ptn = re_compile('(?<=\s)[0-9A-Z]{24}')
+        uuid_ptn = re_compile('(?<=\s)[0-9A-Z]{24}(?=[\s|;])')
         for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
             uuid_list = uuid_ptn.findall(line)
             if not uuid_list:
