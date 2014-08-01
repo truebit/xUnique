@@ -78,8 +78,11 @@ class XUnique(object):
             raise KeyError('current_path_key must be list/tuple/string')
         cur_abs_path = '{}/{}'.format(self.__result[parent_hex]['path'], current_path)
         self.__result.update({
-            current_hex: {'path': cur_abs_path, 'new_key': md5_hex(cur_abs_path),
-                          'type': self.nodes[current_hex]['isa']}})
+            current_hex: {'path': cur_abs_path,
+                          'new_key': md5_hex(cur_abs_path),
+                          'type': self.nodes[current_hex]['isa']
+            }
+        })
 
     def unique_pbxproj(self):
         """
@@ -88,16 +91,21 @@ class XUnique(object):
         PBXProject
         XCConfigurationList
         PBXNativeTarget
+        PBXTargetDependency
+        PBXContainerItemProxy
         XCBuildConfiguration
         PBXSourcesBuildPhase
         PBXFrameworksBuildPhase
         PBXResourcesBuildPhase
         PBXBuildFile
+        PBXReferenceProxy
         PBXFileReference
         PBXGroup
         PBXVariantGroup
         """
         self.__unique_project(self.root_hex)
+        # with open(path.join(self.xcodeproj_path),'w') as result_file:
+        # json.dump(self.__result,result_file)
         self.replace_uuids_with_file()
         self.sort_pbxproj()
 
@@ -119,23 +127,6 @@ class XUnique(object):
                         new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
                     print new_line,
         fi_close()
-
-    # Xcode cannot read json format project.xpbproj
-    """
-    def replace_uuids_with_json(self):
-        nodes = self.proj_json['objects']
-        for old_key in nodes.keys():
-            if old_key in self.__result['to_be_removed']:
-                del nodes[old_key]
-            elif old_key in self.__result:
-                new_key = self.__result[old_key]['new_key']
-                nodes[new_key] = self.nodes.pop(old_key)
-        self.proj_json['objects'] = nodes
-        self.proj_json['rootObject'] = self.__result[self.root_hex]['new_key']
-        with io.open(self.xcode_pbxproj_path, 'w', encoding='utf-8') as pbxproj_file:
-            json_str = json.dumps(self.proj_json, ensure_ascii=False)
-            pbxproj_file.write(json_str)
-    """
 
     def sort_pbxproj(self):
         '''https://github.com/WebKit/webkit/blob/master/Tools/Scripts/sort-Xcode-project-file'''
@@ -160,10 +151,17 @@ class XUnique(object):
         print 'uniquify PBXProject'
         print 'uniquify PBXGroup and PBXFileRef'
         main_group_hex = self.root_node['mainGroup']
-        self.__unique_group_or_fileref(project_hex, main_group_hex)
+        self.__unique_group_or_ref(project_hex, main_group_hex)
         print 'uniquify XCConfigurationList'
         bcl_hex = self.root_node['buildConfigurationList']
         self.__unique_build_configuration_list(project_hex, bcl_hex)
+        subprojects_list = self.root_node.get('projectReferences')
+        if subprojects_list:
+            print 'uniquify Subprojects'
+            for subproject_dict in subprojects_list:
+                product_group_hex = subproject_dict['ProductGroup']
+                project_ref_parent_hex = subproject_dict['ProjectRef']
+                self.__unique_group_or_ref(project_ref_parent_hex, product_group_hex)
         targets_list = self.root_node['targets']
         for target_hex in targets_list:
             self.__unique_target(project_hex, target_hex)
@@ -177,11 +175,10 @@ class XUnique(object):
         for build_configuration_hex in build_configuration_list_node['buildConfigurations']:
             self.__unique_build_configuration(build_configuration_list_hex, build_configuration_hex)
 
-
     def __unique_build_configuration(self, parent_hex, build_configuration_hex):
         '''XCBuildConfiguration'''
-        self.__set_to_result(parent_hex, build_configuration_hex, 'name')
-
+        cur_path_key = 'name'
+        self.__set_to_result(parent_hex, build_configuration_hex, cur_path_key)
 
     def __unique_target(self, parent_hex, target_hex):
         '''PBXNativeTarget'''
@@ -191,9 +188,37 @@ class XUnique(object):
         current_node = self.nodes[target_hex]
         bcl_hex = current_node['buildConfigurationList']
         self.__unique_build_configuration_list(target_hex, bcl_hex)
+        dependencies_list = current_node.get('dependencies')
+        if dependencies_list:
+            for dependency_hex in dependencies_list:
+                self.__unique_target_dependency(target_hex, dependency_hex)
         build_phases_list = current_node['buildPhases']
         for build_phase_hex in build_phases_list:
             self.__unique_build_phase(target_hex, build_phase_hex)
+
+    def __unique_target_dependency(self, parent_hex, target_dependency_hex):
+        '''PBXTargetDependency'''
+        self.__set_to_result(parent_hex, target_dependency_hex, 'name')
+        self.__unique_container_item_proxy(target_dependency_hex, self.nodes[target_dependency_hex]['targetProxy'])
+
+    def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
+        '''PBXContainerItemProxy'''
+        print 'uniquify PBXContainerItemProxy'
+        self.__set_to_result(parent_hex, container_item_proxy_hex, 'remoteInfo')
+        cur_path = self.__result[container_item_proxy_hex]['path']
+        current_node = self.nodes[container_item_proxy_hex]
+        # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
+        remote_global_id_hex = current_node['remoteGlobalIDString']
+        portal_hex = current_node['containerPortal']
+        portal_path = self.__result[portal_hex]['path']
+        new_rg_id_path = '{}+{}'.format(cur_path, portal_path)
+        self.__result.update({
+            remote_global_id_hex: {'path': new_rg_id_path,
+                                   'new_key': md5_hex(new_rg_id_path),
+                                   'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
+                                                          'remoteGlobalIDString')
+            }
+        })
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
         '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase PBXCopyFilesBuildPhase'''
@@ -206,9 +231,9 @@ class XUnique(object):
         for build_file_hex in current_node['files']:
             self.__unique_build_file(build_phase_hex, build_file_hex)
 
-    def __unique_group_or_fileref(self, parent_hex, group_fileref_hex):
-        '''PBXFileReference PBXGroup PBXVariantGroup'''
-        current_hex = group_fileref_hex
+    def __unique_group_or_ref(self, parent_hex, group_ref_hex):
+        '''PBXFileReference PBXGroup PBXVariantGroup PBXReferenceProxy'''
+        current_hex = group_ref_hex
         if self.nodes[current_hex].get('name'):
             cur_path_key = 'name'
         elif self.nodes[current_hex].get('path'):
@@ -219,7 +244,9 @@ class XUnique(object):
         self.__set_to_result(parent_hex, current_hex, cur_path_key)
         if self.nodes[current_hex].get('children'):
             for child_hex in self.nodes[current_hex]['children']:
-                self.__unique_group_or_fileref(current_hex, child_hex)
+                self.__unique_group_or_ref(current_hex, child_hex)
+        elif self.nodes[current_hex]['isa'] == 'PBXReferenceProxy':
+            self.__unique_container_item_proxy(parent_hex, self.nodes[current_hex]['remoteRef'])
 
     def __unique_build_file(self, parent_hex, build_file_hex):
         '''PBXBuildFile'''
