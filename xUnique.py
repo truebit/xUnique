@@ -127,6 +127,7 @@ class XUnique(object):
                         new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
                     print new_line,
         fi_close()
+        unlink(self.xcode_pbxproj_path + '.bak')
 
     def sort_pbxproj(self):
         '''https://github.com/WebKit/webkit/blob/master/Tools/Scripts/sort-Xcode-project-file'''
