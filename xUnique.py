@@ -37,7 +37,7 @@ class XUnique(object):
         abs_xcodeproj_path = path.abspath(xcodeproj_path)
         if not path.exists(abs_xcodeproj_path):
             raise SystemExit('Path "{!r}" does not exist!'.format(abs_xcodeproj_path))
-        elif xcodeproj_path.endswith('xcodeproj') or xcodeproj_path.endswith('xcodeproj/'):
+        elif xcodeproj_path.endswith(('xcodeproj','xcodeproj/')):
             self.xcodeproj_path = abs_xcodeproj_path
             self.xcode_pbxproj_path = path.join(abs_xcodeproj_path, 'project.pbxproj')
         elif abs_xcodeproj_path.endswith('project.pbxproj'):
