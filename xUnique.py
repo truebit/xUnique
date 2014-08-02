@@ -27,6 +27,9 @@ from urllib import urlretrieve
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
 from sys import argv as sys_argv
+from collections import deque
+from filecmp import cmp as filecmp_cmp
+
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 
@@ -37,7 +40,7 @@ class XUnique(object):
         abs_xcodeproj_path = path.abspath(xcodeproj_path)
         if not path.exists(abs_xcodeproj_path):
             raise SystemExit('Path "{!r}" does not exist!'.format(abs_xcodeproj_path))
-        elif xcodeproj_path.endswith(('xcodeproj','xcodeproj/')):
+        elif xcodeproj_path.endswith(('xcodeproj', 'xcodeproj/')):
             self.xcodeproj_path = abs_xcodeproj_path
             self.xcode_pbxproj_path = path.join(abs_xcodeproj_path, 'project.pbxproj')
         elif abs_xcodeproj_path.endswith('project.pbxproj'):
@@ -129,8 +132,10 @@ class XUnique(object):
         fi_close()
         unlink(self.xcode_pbxproj_path + '.bak')
 
-    def sort_pbxproj(self):
+    def sort_pbxproj_pl(self):
         """
+        deprecated, use pure python method sort_pbxproj() below
+
         https://github.com/truebit/webkit/commits/master/Tools/Scripts/sort-Xcode-project-file
 
         my modified version which supports:
@@ -153,12 +158,102 @@ class XUnique(object):
         print 'sort project.xpbproj file'
         sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
 
+    def sort_pbxproj(self):
+        print 'sort project.xpbproj file'
+        lines = []
+        files_start_ptn = re_compile('^(\s*)files = \(\s*$')
+        files_key_ptn = re_compile('(?<=[A-F0-9]{32} \/\* ).+?(?= in )')
+        fc_end_ptn = '\);'
+        files_flag = False
+        children_start_ptn = re_compile('^(\s*)children = \(\s*$')
+        children_pbx_key_ptn = re_compile('(?<=[A-F0-9]{32} \/\* ).+?(?= \*\/)')
+        child_flag = False
+        pbx_start_ptn = re_compile('^.*Begin (PBXBuildFile|PBXFileReference) section.*$')
+        pbx_end_ptn = ('^.*End ', ' section.*$')
+        pbx_flag = False
+        last_two = deque([])
+
+        def file_dir_cmp(x, y):
+            if '.' in x:
+                if '.' in y:
+                    return cmp(x, y)
+                else:
+                    return 1
+            else:
+                if '.' in y:
+                    return -1
+                else:
+                    return cmp(x, y)
+
+        for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
+            last_two.append(line)
+            if len(last_two) > 2:
+                last_two.popleft()
+            # files search and sort
+            files_match = files_start_ptn.search(line)
+            if files_match:
+                print line,
+                files_flag = True
+                if isinstance(fc_end_ptn, unicode):
+                    fc_end_ptn = re_compile(files_match.group(1) + fc_end_ptn)
+            if files_flag:
+                if fc_end_ptn.search(line):
+                    lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
+                    print ''.join(lines),
+                    lines = []
+                    files_flag = False
+                    fc_end_ptn = '\);'
+                elif files_key_ptn.search(line):
+                    lines.append(line)
+            # children search and sort
+            children_match = children_start_ptn.search(line)
+            if children_match:
+                print line,
+                child_flag = True
+                if isinstance(fc_end_ptn, unicode):
+                    fc_end_ptn = re_compile(children_match.group(1) + fc_end_ptn)
+            if child_flag:
+                if fc_end_ptn.search(line):
+                    if last_two[0] != self.__main_group_hex:
+                        lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
+                    print ''.join(lines),
+                    lines = []
+                    child_flag = False
+                    fc_end_ptn = '\);'
+                elif children_pbx_key_ptn.search(line):
+                    lines.append(line)
+            # PBX search and sort
+            pbx_match = pbx_start_ptn.search(line)
+            if pbx_match:
+                print line,
+                pbx_flag = True
+                if isinstance(pbx_end_ptn, tuple):
+                    pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
+            if pbx_flag:
+                if pbx_end_ptn.search(line):
+                    lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
+                    print ''.join(lines),
+                    lines = []
+                    pbx_flag = False
+                    pbx_end_ptn = ('^.*End ', ' section.*')
+                elif children_pbx_key_ptn.search(line):
+                    lines.append(line)
+            # normal output
+            if not (files_flag or child_flag or pbx_flag):
+                print line,
+        fi_close()
+        tmp_path = self.xcode_pbxproj_path + '.bak'
+        if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
+            print 'Ignore, no changes made to {}'.format(self.xcode_pbxproj_path)
+        else:
+            unlink(self.xcode_pbxproj_path + '.bak')
+
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
         print 'uniquify PBXProject'
         print 'uniquify PBXGroup and PBXFileRef'
-        main_group_hex = self.root_node['mainGroup']
-        self.__unique_group_or_ref(project_hex, main_group_hex)
+        self.__main_group_hex = self.root_node['mainGroup']
+        self.__unique_group_or_ref(project_hex, self.__main_group_hex)
         print 'uniquify XCConfigurationList'
         bcl_hex = self.root_node['buildConfigurationList']
         self.__unique_build_configuration_list(project_hex, bcl_hex)
