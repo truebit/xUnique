@@ -2,4 +2,4 @@
 *.swp
 .DS_Store
 .idea/
-sort-Xcode-project-file-v32.pl
+sort-Xcode-project-file-*.pl
