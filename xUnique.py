@@ -134,7 +134,7 @@ class XUnique(object):
         my modified version which supports to sort PBXFileReference and PBXBuildFile sections:
         https://github.com/truebit/webkit/commit/7afa105d20fccdec68d8bd778b649409f17cbdc0#diff-d65acb20b3ed0e21ae223a4e0cadf7b1
         """
-        sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-mod1.pl')
+        sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-mod2.pl')
         if not path.exists(sort_script_path):
             print 'downloading sort-Xcode-project-file'
             f_path, http_msgs = urlretrieve(
