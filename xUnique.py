@@ -131,8 +131,11 @@ class XUnique(object):
 
     def sort_pbxproj(self):
         """
-        my modified version which supports to sort PBXFileReference and PBXBuildFile sections:
-        https://github.com/truebit/webkit/commit/7afa105d20fccdec68d8bd778b649409f17cbdc0#diff-d65acb20b3ed0e21ae223a4e0cadf7b1
+        https://github.com/truebit/webkit/commits/master/Tools/Scripts/sort-Xcode-project-file
+
+        my modified version which supports:
+        1. sort PBXFileReference and PBXBuildFile sections
+        2. avoid creating new file if no changes made
         """
         sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-mod2.pl')
         if not path.exists(sort_script_path):
