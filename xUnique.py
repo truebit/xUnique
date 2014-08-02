@@ -3,7 +3,7 @@
 """
 This software is licensed under the Apache 2 license, quoted below.
 
-Copyright 2014 Wang Xiao <wangxiao8611@gmail.com, http://fclef.wordpress.com/about>
+Copyright 2014 Xiao Wang <wangxiao8611@gmail.com, http://fclef.wordpress.com/about>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this file except in compliance with the License. You may obtain a copy of
@@ -130,16 +130,19 @@ class XUnique(object):
         unlink(self.xcode_pbxproj_path + '.bak')
 
     def sort_pbxproj(self):
-        '''https://github.com/WebKit/webkit/blob/master/Tools/Scripts/sort-Xcode-project-file'''
+        """
+        my modified version which supports to sort PBXFileReference and PBXBuildFile sections:
+        https://github.com/truebit/webkit/commit/7afa105d20fccdec68d8bd778b649409f17cbdc0#diff-d65acb20b3ed0e21ae223a4e0cadf7b1
+        """
         sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-v32.pl')
         if not path.exists(sort_script_path):
             print 'downloading sort-Xcode-project-file'
             f_path, http_msgs = urlretrieve(
-                'https://raw.githubusercontent.com/WebKit/webkit/master/Tools/Scripts/sort-Xcode-project-file',
+                'https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file',
                 filename=sort_script_path)
-            if int(http_msgs['content-length']) < 1000:  # current is 5850
+            if int(http_msgs['content-length']) < 1000:  # current is 6430
                 raise SystemExit(
-                    'Cannot download script file from "https://raw.githubusercontent.com/WebKit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
+                    'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
             for line in fi_input(sort_script_path, inplace=1, backup='.bak'):
                 print line.replace('{24}', '{32}'),
             fi_close()
