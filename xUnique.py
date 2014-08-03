@@ -20,7 +20,7 @@ the License.
 
 from __future__ import unicode_literals
 from subprocess import (check_output as sp_co, check_call as sp_cc)
-from os import path, unlink
+from os import path, unlink, rename
 from hashlib import md5 as hl_md5
 import json
 from urllib import urlretrieve
@@ -198,9 +198,10 @@ class XUnique(object):
                     fc_end_ptn = re_compile(files_match.group(1) + fc_end_ptn)
             if files_flag:
                 if fc_end_ptn.search(line):
-                    lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
-                    print ''.join(lines),
-                    lines = []
+                    if lines:
+                        lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
+                        print ''.join(lines),
+                        lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
                 elif files_key_ptn.search(line):
@@ -214,10 +215,11 @@ class XUnique(object):
                     fc_end_ptn = re_compile(children_match.group(1) + fc_end_ptn)
             if child_flag:
                 if fc_end_ptn.search(line):
-                    if last_two[0] != self.__main_group_hex:
-                        lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
-                    print ''.join(lines),
-                    lines = []
+                    if lines:
+                        if last_two[0] != self.__main_group_hex:
+                            lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
+                        print ''.join(lines),
+                        lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
                 elif children_pbx_key_ptn.search(line):
@@ -231,9 +233,10 @@ class XUnique(object):
                     pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
             if pbx_flag:
                 if pbx_end_ptn.search(line):
-                    lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
-                    print ''.join(lines),
-                    lines = []
+                    if lines:
+                        lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
+                        print ''.join(lines),
+                        lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
                 elif children_pbx_key_ptn.search(line):
@@ -244,6 +247,8 @@ class XUnique(object):
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.bak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
+            unlink(self.xcode_pbxproj_path)
+            rename(tmp_path,self.xcode_pbxproj_path)
             print 'Ignore, no changes made to {}'.format(self.xcode_pbxproj_path)
         else:
             unlink(self.xcode_pbxproj_path + '.bak')
