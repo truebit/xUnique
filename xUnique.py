@@ -26,7 +26,7 @@ import json
 from urllib import urlretrieve
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
-from sys import argv as sys_argv
+from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding)
 from collections import deque
 from filecmp import cmp as filecmp_cmp
 
@@ -65,8 +65,8 @@ class XUnique(object):
 
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
-        json_str = sp_co(pbproj_to_json_cmd)
-        return json.loads(json_str)
+        json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
+        return json.loads(json_unicode_str)
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -116,9 +116,11 @@ class XUnique(object):
         print 'replace UUIDs and remove unused UUIDs'
         uuid_ptn = re_compile('(?<=\s)[0-9A-F]{24}(?=[\s;])')
         for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
+            # project.pbxproj is an utf-8 encoded file
+            line = line.decode('utf-8')
             uuid_list = uuid_ptn.findall(line)
             if not uuid_list:
-                print line,
+                print line.encode('utf-8'),
             else:
                 new_line = line
                 # remove line with non-existing element
@@ -128,7 +130,7 @@ class XUnique(object):
                 else:
                     for uuid in uuid_list:
                         new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
-                    print new_line,
+                    print new_line.encode('utf-8'),
         fi_close()
         unlink(self.xcode_pbxproj_path + '.bak')
 
@@ -186,6 +188,8 @@ class XUnique(object):
                     return cmp(x, y)
 
         for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
+            # project.pbxproj is an utf-8 encoded file
+            line = line.decode('utf-8')
             last_two.append(line)
             if len(last_two) > 2:
                 last_two.popleft()
@@ -200,7 +204,7 @@ class XUnique(object):
                 if fc_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
-                        print ''.join(lines),
+                        print ''.join(lines).encode('utf-8'),
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
@@ -218,7 +222,7 @@ class XUnique(object):
                     if lines:
                         if last_two[0] != self.__main_group_hex:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
-                        print ''.join(lines),
+                        print ''.join(lines).encode('utf-8'),
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
@@ -235,7 +239,7 @@ class XUnique(object):
                 if pbx_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
-                        print ''.join(lines),
+                        print ''.join(lines).encode('utf-8'),
                         lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
@@ -370,6 +374,6 @@ if __name__ == '__main__':
     if len(sys_argv) != 2:
         raise SystemExit('usage: xUnique.py path/to/Project.xcodeproj')
     else:
-        xcode_proj_path = sys_argv[1]
+        xcode_proj_path = sys_argv[1].decode(sys_get_fs_encoding())
         xunique = XUnique(xcode_proj_path)
         xunique.unique_pbxproj()
