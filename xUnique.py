@@ -220,7 +220,7 @@ class XUnique(object):
             if child_flag:
                 if fc_end_ptn.search(line):
                     if lines:
-                        if last_two[0] != self.__main_group_hex:
+                        if self.__result[self.__main_group_hex]['new_key'] not in last_two[0]:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
                         print ''.join(lines).encode('utf-8'),
                         lines = []
