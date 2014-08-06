@@ -19,23 +19,25 @@ the License.
 """
 
 from __future__ import unicode_literals
+from __future__ import print_function
 from subprocess import (check_output as sp_co, check_call as sp_cc)
 from os import path, unlink, rename
 from hashlib import md5 as hl_md5
-import json
+from json import loads as json_loads
 from urllib import urlretrieve
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
 from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding)
 from collections import deque
 from filecmp import cmp as filecmp_cmp
+from optparse import OptionParser
 
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 
 
 class XUnique(object):
-    def __init__(self, xcodeproj_path):
+    def __init__(self, xcodeproj_path, verbose=False):
         # check project path
         abs_xcodeproj_path = path.abspath(xcodeproj_path)
         if not path.exists(abs_xcodeproj_path):
@@ -48,11 +50,13 @@ class XUnique(object):
             self.xcodeproj_path = path.split(self.xcode_pbxproj_path)[0]
         else:
             raise SystemExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
+        self.vprint = print if verbose else lambda *a, **k: None
         self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
         self.root_hex = self.proj_json['rootObject']
         self.root_node = self.nodes[self.root_hex]
+        self.main_group_hex = self.root_node['mainGroup']
         self.__result = {}
         # initialize root content
         self.__result.update(
@@ -66,7 +70,7 @@ class XUnique(object):
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
         json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
-        return json.loads(json_unicode_str)
+        return json_loads(json_unicode_str)
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -88,8 +92,14 @@ class XUnique(object):
         })
 
     def unique_pbxproj(self):
-        """
-        iterate all nodes in pbxproj file:
+        """"""
+        # with open(path.join(self.xcodeproj_path),'w') as result_file:
+        # json.dump(self.__result,result_file)
+        self.unique_project()
+        self.sort_pbxproj()
+
+    def unique_project(self):
+        """iterate all nodes in pbxproj file:
 
         PBXProject
         XCConfigurationList
@@ -107,20 +117,18 @@ class XUnique(object):
         PBXVariantGroup
         """
         self.__unique_project(self.root_hex)
-        # with open(path.join(self.xcodeproj_path),'w') as result_file:
-        # json.dump(self.__result,result_file)
         self.replace_uuids_with_file()
-        self.sort_pbxproj()
+
 
     def replace_uuids_with_file(self):
-        print 'replace UUIDs and remove unused UUIDs'
+        self.vprint('replace UUIDs and remove unused UUIDs')
         uuid_ptn = re_compile('(?<=\s)[0-9A-F]{24}(?=[\s;])')
         for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
             uuid_list = uuid_ptn.findall(line)
             if not uuid_list:
-                print line.encode('utf-8'),
+                print(line.encode('utf-8'), end='')
             else:
                 new_line = line
                 # remove line with non-existing element
@@ -130,9 +138,16 @@ class XUnique(object):
                 else:
                     for uuid in uuid_list:
                         new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
-                    print new_line.encode('utf-8'),
+                    print(new_line.encode('utf-8'), end='')
         fi_close()
-        unlink(self.xcode_pbxproj_path + '.bak')
+        tmp_path = self.xcode_pbxproj_path + '.bak'
+        if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
+            unlink(self.xcode_pbxproj_path)
+            rename(tmp_path, self.xcode_pbxproj_path)
+            print('Ignore uniquify, no changes made to', self.xcode_pbxproj_path)
+        else:
+            unlink(tmp_path)
+            print('Uniquify done')
 
     def sort_pbxproj_pl(self):
         """
@@ -146,7 +161,7 @@ class XUnique(object):
         """
         sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-mod2.pl')
         if not path.exists(sort_script_path):
-            print 'downloading sort-Xcode-project-file'
+            self.vprint('downloading sort-Xcode-project-file')
             f_path, http_msgs = urlretrieve(
                 'https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file',
                 filename=sort_script_path)
@@ -154,21 +169,22 @@ class XUnique(object):
                 raise SystemExit(
                     'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
             for line in fi_input(sort_script_path, inplace=1, backup='.bak'):
-                print line.replace('{24}', '{32}'),
+                print(line.replace('{24}', '{32}'), end='')
             fi_close()
             unlink(sort_script_path + '.bak')
-        print 'sort project.xpbproj file'
+        self.vprint('sort project.xpbproj file')
         sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
 
     def sort_pbxproj(self):
-        print 'sort project.xpbproj file'
+        self.vprint('sort project.xpbproj file')
+        uuid_chars = len(self.main_group_hex)
         lines = []
         files_start_ptn = re_compile('^(\s*)files = \(\s*$')
-        files_key_ptn = re_compile('(?<=[A-F0-9]{32} \/\* ).+?(?= in )')
+        files_key_ptn = re_compile('(?<=[A-F0-9]{{{}}} \/\* ).+?(?= in )'.format(uuid_chars))
         fc_end_ptn = '\);'
         files_flag = False
         children_start_ptn = re_compile('^(\s*)children = \(\s*$')
-        children_pbx_key_ptn = re_compile('(?<=[A-F0-9]{32} \/\* ).+?(?= \*\/)')
+        children_pbx_key_ptn = re_compile('(?<=[A-F0-9]{{{}}} \/\* ).+?(?= \*\/)'.format(uuid_chars))
         child_flag = False
         pbx_start_ptn = re_compile('^.*Begin (PBXBuildFile|PBXFileReference) section.*$')
         pbx_end_ptn = ('^.*End ', ' section.*$')
@@ -196,7 +212,7 @@ class XUnique(object):
             # files search and sort
             files_match = files_start_ptn.search(line)
             if files_match:
-                print line,
+                print(line, end='')
                 files_flag = True
                 if isinstance(fc_end_ptn, unicode):
                     fc_end_ptn = re_compile(files_match.group(1) + fc_end_ptn)
@@ -204,7 +220,7 @@ class XUnique(object):
                 if fc_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
-                        print ''.join(lines).encode('utf-8'),
+                        print(''.join(lines).encode('utf-8'), end='')
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
@@ -213,16 +229,17 @@ class XUnique(object):
             # children search and sort
             children_match = children_start_ptn.search(line)
             if children_match:
-                print line,
+                print(line, end='')
                 child_flag = True
                 if isinstance(fc_end_ptn, unicode):
                     fc_end_ptn = re_compile(children_match.group(1) + fc_end_ptn)
             if child_flag:
                 if fc_end_ptn.search(line):
                     if lines:
-                        if self.__result[self.__main_group_hex]['new_key'] not in last_two[0]:
-                            lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),cmp=file_dir_cmp)
-                        print ''.join(lines).encode('utf-8'),
+                        if self.main_group_hex not in last_two[0]:
+                            lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),
+                                       cmp=file_dir_cmp)
+                        print(''.join(lines).encode('utf-8'), end='')
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
@@ -231,7 +248,7 @@ class XUnique(object):
             # PBX search and sort
             pbx_match = pbx_start_ptn.search(line)
             if pbx_match:
-                print line,
+                print(line, end='')
                 pbx_flag = True
                 if isinstance(pbx_end_ptn, tuple):
                     pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
@@ -239,7 +256,7 @@ class XUnique(object):
                 if pbx_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
-                        print ''.join(lines).encode('utf-8'),
+                        print(''.join(lines).encode('utf-8'), end='')
                         lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
@@ -247,28 +264,28 @@ class XUnique(object):
                     lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
-                print line,
+                print(line, end='')
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.bak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
-            rename(tmp_path,self.xcode_pbxproj_path)
-            print 'Ignore, no changes made to {}'.format(self.xcode_pbxproj_path)
+            rename(tmp_path, self.xcode_pbxproj_path)
+            print('Ignore sort, no changes made to', self.xcode_pbxproj_path)
         else:
-            unlink(self.xcode_pbxproj_path + '.bak')
+            unlink(tmp_path)
+            print('Sort done')
 
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
-        print 'uniquify PBXProject'
-        print 'uniquify PBXGroup and PBXFileRef'
-        self.__main_group_hex = self.root_node['mainGroup']
-        self.__unique_group_or_ref(project_hex, self.__main_group_hex)
-        print 'uniquify XCConfigurationList'
+        self.vprint('uniquify PBXProject')
+        self.vprint('uniquify PBXGroup and PBXFileRef')
+        self.__unique_group_or_ref(project_hex, self.main_group_hex)
+        self.vprint('uniquify XCConfigurationList')
         bcl_hex = self.root_node['buildConfigurationList']
         self.__unique_build_configuration_list(project_hex, bcl_hex)
         subprojects_list = self.root_node.get('projectReferences')
         if subprojects_list:
-            print 'uniquify Subprojects'
+            self.vprint('uniquify Subprojects')
             for subproject_dict in subprojects_list:
                 product_group_hex = subproject_dict['ProductGroup']
                 project_ref_parent_hex = subproject_dict['ProjectRef']
@@ -282,7 +299,7 @@ class XUnique(object):
         cur_path_key = 'defaultConfigurationName'
         self.__set_to_result(parent_hex, build_configuration_list_hex, cur_path_key)
         build_configuration_list_node = self.nodes[build_configuration_list_hex]
-        print 'uniquify XCConfiguration'
+        self.vprint('uniquify XCConfiguration')
         for build_configuration_hex in build_configuration_list_node['buildConfigurations']:
             self.__unique_build_configuration(build_configuration_list_hex, build_configuration_hex)
 
@@ -293,7 +310,7 @@ class XUnique(object):
 
     def __unique_target(self, parent_hex, target_hex):
         '''PBXNativeTarget'''
-        print 'uniquify PBXNativeTarget'
+        self.vprint('uniquify PBXNativeTarget')
         cur_path_key = ('productName', 'name')
         self.__set_to_result(parent_hex, target_hex, cur_path_key)
         current_node = self.nodes[target_hex]
@@ -314,7 +331,7 @@ class XUnique(object):
 
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
         '''PBXContainerItemProxy'''
-        print 'uniquify PBXContainerItemProxy'
+        self.vprint('uniquify PBXContainerItemProxy')
         self.__set_to_result(parent_hex, container_item_proxy_hex, 'remoteInfo')
         cur_path = self.__result[container_item_proxy_hex]['path']
         current_node = self.nodes[container_item_proxy_hex]
@@ -333,12 +350,12 @@ class XUnique(object):
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
         '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase PBXCopyFilesBuildPhase'''
-        print 'uniquify PBXSourcesBuildPhase, PBXFrameworksBuildPhase and PBXResourcesBuildPhase'
+        self.vprint('uniquify PBXSourcesBuildPhase, PBXFrameworksBuildPhase and PBXResourcesBuildPhase')
         current_node = self.nodes[build_phase_hex]
         # no useful key, use its isa value
         cur_path_key = current_node['isa']
         self.__set_to_result(parent_hex, build_phase_hex, cur_path_key)
-        print 'uniquify PBXBuildFile'
+        self.vprint('uniquify PBXBuildFile')
         for build_file_hex in current_node['files']:
             self.__unique_build_file(build_phase_hex, build_file_hex)
 
@@ -370,10 +387,35 @@ class XUnique(object):
             self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
 
-if __name__ == '__main__':
-    if len(sys_argv) != 2:
-        raise SystemExit('usage: xUnique.py path/to/Project.xcodeproj')
-    else:
-        xcode_proj_path = sys_argv[1].decode(sys_get_fs_encoding())
-        xunique = XUnique(xcode_proj_path)
+def main(sys_args):
+    usage = "usage: %prog [[-u|--unique]|[-s|--sort (24|32)]] path/to/Project.xcodeproj"
+    description = "By default, without any option, xUnique uniquify and sort the project file."
+    parser = OptionParser(usage=usage, description=description)
+    parser.add_option("-v", "--verbose",
+                      action="store_true", dest="verbose", default=False,
+                      help="output verbose messages. default is False.")
+    parser.add_option("-u", "--unique", action="store_true", dest="unique_bool", default=False,
+                      help="uniquify the project file. default is False.")
+    parser.add_option("-s", "--sort", action="store_true", dest="sort_bool", default=False,
+                      help="sort the project file. default is False.")
+    (options, args) = parser.parse_args(sys_args[1:])
+    if len(args) < 1:
+        parser.print_help()
+        raise SystemExit("xUnique requires at least one positional argument: relative/absolute path to xcodeproj.")
+    xcode_proj_path = args[0].decode(sys_get_fs_encoding())
+    xunique = XUnique(xcode_proj_path, options.verbose)
+    if not (options.unique_bool or options.sort_bool):
+        print("Uniquify and Sort")
         xunique.unique_pbxproj()
+        print("Uniquify and Sort done")
+    else:
+        if options.unique_bool:
+            print('Uniquify...')
+            xunique.unique_project()
+        if options.sort_bool:
+            print('Sort...')
+            xunique.sort_pbxproj()
+
+
+if __name__ == '__main__':
+    main(sys_argv)
