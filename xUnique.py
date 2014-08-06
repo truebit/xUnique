@@ -388,7 +388,7 @@ class XUnique(object):
 
 
 def main(sys_args):
-    usage = "usage: %prog [[-u|--unique]|[-s|--sort (24|32)]] path/to/Project.xcodeproj"
+    usage = "usage: %prog [-v|-verbose][-u|--unique][-s|--sort] path/to/Project.xcodeproj"
     description = "By default, without any option, xUnique uniquify and sort the project file."
     parser = OptionParser(usage=usage, description=description)
     parser.add_option("-v", "--verbose",
