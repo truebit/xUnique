@@ -23,7 +23,7 @@ from __future__ import print_function
 from subprocess import (check_output as sp_co, check_call as sp_cc)
 from os import path, unlink, rename
 from hashlib import md5 as hl_md5
-from json import loads as json_loads
+from json import (loads as json_loads, dump as json_dump)
 from urllib import urlretrieve
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
@@ -37,20 +37,21 @@ md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 
 
 class XUnique(object):
-    def __init__(self, xcodeproj_path, verbose=False):
+    def __init__(self, target_path, verbose=False):
         # check project path
-        abs_xcodeproj_path = path.abspath(xcodeproj_path)
-        if not path.exists(abs_xcodeproj_path):
-            raise SystemExit('Path "{!r}" does not exist!'.format(abs_xcodeproj_path))
-        elif xcodeproj_path.endswith(('xcodeproj', 'xcodeproj/')):
-            self.xcodeproj_path = abs_xcodeproj_path
-            self.xcode_pbxproj_path = path.join(abs_xcodeproj_path, 'project.pbxproj')
-        elif abs_xcodeproj_path.endswith('project.pbxproj'):
-            self.xcode_pbxproj_path = abs_xcodeproj_path
+        abs_target_path = path.abspath(target_path)
+        if not path.exists(abs_target_path):
+            raise SystemExit('Path "{!r}" does not exist!'.format(abs_target_path))
+        elif abs_target_path.endswith('xcodeproj'):
+            self.xcodeproj_path = abs_target_path
+            self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
+        elif abs_target_path.endswith('project.pbxproj'):
+            self.xcode_pbxproj_path = abs_target_path
             self.xcodeproj_path = path.split(self.xcode_pbxproj_path)[0]
         else:
             raise SystemExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
-        self.vprint = print if verbose else lambda *a, **k: None
+        self.verbose = verbose
+        self.vprint = print if self.verbose else lambda *a, **k: None
         self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
@@ -93,8 +94,6 @@ class XUnique(object):
 
     def unique_pbxproj(self):
         """"""
-        # with open(path.join(self.xcodeproj_path),'w') as result_file:
-        # json.dump(self.__result,result_file)
         self.unique_project()
         self.sort_pbxproj()
 
@@ -117,6 +116,11 @@ class XUnique(object):
         PBXVariantGroup
         """
         self.__unique_project(self.root_hex)
+        if self.verbose:
+            debug_result_file_path = path.join(self.xcodeproj_path, 'debug_result.json')
+            with open(debug_result_file_path, 'w') as debug_result_file:
+                json_dump(self.__result, debug_result_file)
+            self.vprint("result json file has been written to '{}'".format(debug_result_file_path))
         self.replace_uuids_with_file()
 
 
