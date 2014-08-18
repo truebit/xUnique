@@ -52,7 +52,10 @@ class XUnique(object):
             raise SystemExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
         self.verbose = verbose
         self.vprint = print if self.verbose else lambda *a, **k: None
-        self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
+        self.proj_root = self.get_proj_root()
+        if not self.proj_root:
+            self.vprint('PBXProject name not found, using .xcodeproj dir name instead')
+            self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
         self.root_hex = self.proj_json['rootObject']
@@ -96,6 +99,19 @@ class XUnique(object):
         """"""
         self.unique_project()
         self.sort_pbxproj()
+
+    def get_proj_root(self):
+        '''PBXProject name,the root node'''
+        pbxproject_ptn = re_compile('(?<=PBXProject ").*(?=")')
+        with open(self.xcode_pbxproj_path) as pbxproj_file:
+            for line in pbxproj_file:
+                # project.pbxproj is an utf-8 encoded file
+                line = line.decode('utf-8')
+                result = pbxproject_ptn.search(line)
+                if result:
+                    # Backward compatibility using suffix
+                    return '{}.xcodeproj'.format(result.group())
+        return None
 
     def unique_project(self):
         """iterate all nodes in pbxproj file:
