@@ -77,7 +77,11 @@ class XUnique(object):
             json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
             return json_loads(json_unicode_str)
         except CalledProcessError as cpe:
-            raise SystemExit(cpe.output)
+            print(cpe.output)
+            raise SystemExit(
+                """Please check:
+1. You have installed Xcode Command Line Tools and command 'plutil' could be found in $PATH;
+2. The project file does not contain merge conflicts""")
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
