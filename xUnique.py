@@ -20,7 +20,7 @@ the License.
 
 from __future__ import unicode_literals
 from __future__ import print_function
-from subprocess import (check_output as sp_co, check_call as sp_cc)
+from subprocess import (check_output as sp_co, check_call as sp_cc, CalledProcessError)
 from os import path, unlink, rename
 from hashlib import md5 as hl_md5
 from json import (loads as json_loads, dump as json_dump)
@@ -73,8 +73,11 @@ class XUnique(object):
 
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
-        json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
-        return json_loads(json_unicode_str)
+        try:
+            json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
+            return json_loads(json_unicode_str)
+        except CalledProcessError as cpe:
+            raise SystemExit(cpe.output)
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
