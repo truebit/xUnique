@@ -406,12 +406,15 @@ class XUnique(object):
     def __unique_build_file(self, parent_hex, build_file_hex):
         '''PBXBuildFile'''
         current_node = self.nodes[build_file_hex]
-        file_ref_hex = current_node['fileRef']
-        if self.__result.get(file_ref_hex):
-            cur_path_key = self.__result[file_ref_hex]['path']
-            self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
+        file_ref_hex = current_node.get('fileRef')
+        if not file_ref_hex:
+            self.__result.setdefault('to_be_removed', []).append(build_file_hex)
         else:
-            self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
+            if self.__result.get(file_ref_hex):
+                cur_path_key = self.__result[file_ref_hex]['path']
+                self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
+            else:
+                self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
 
 def main(sys_args):
