@@ -150,7 +150,7 @@ class XUnique(object):
     def replace_uuids_with_file(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
         uuid_ptn = re_compile('(?<=\s)[0-9A-F]{24}(?=[\s;])')
-        for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
+        for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
             uuid_list = uuid_ptn.findall(line)
@@ -167,7 +167,7 @@ class XUnique(object):
                         new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
                     print(new_line.encode('utf-8'), end='')
         fi_close()
-        tmp_path = self.xcode_pbxproj_path + '.bak'
+        tmp_path = self.xcode_pbxproj_path + '.ubak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
@@ -195,10 +195,10 @@ class XUnique(object):
             if int(http_msgs['content-length']) < 1000:  # current is 6430
                 raise SystemExit(
                     'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
-            for line in fi_input(sort_script_path, inplace=1, backup='.bak'):
+            for line in fi_input(sort_script_path, inplace=1, backup='.sbak'):
                 print(line.replace('{24}', '{32}'), end='')
             fi_close()
-            unlink(sort_script_path + '.bak')
+            unlink(sort_script_path + '.sbak')
         self.vprint('sort project.xpbproj file')
         sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
 
@@ -230,7 +230,7 @@ class XUnique(object):
                 else:
                     return cmp(x, y)
 
-        for line in fi_input(self.xcode_pbxproj_path, backup='.bak', inplace=1):
+        for line in fi_input(self.xcode_pbxproj_path, backup='.sbak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
             last_two.append(line)
@@ -293,7 +293,7 @@ class XUnique(object):
             if not (files_flag or child_flag or pbx_flag):
                 print(line, end='')
         fi_close()
-        tmp_path = self.xcode_pbxproj_path + '.bak'
+        tmp_path = self.xcode_pbxproj_path + '.sbak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
