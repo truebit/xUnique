@@ -41,7 +41,7 @@ class XUnique(object):
         # check project path
         abs_target_path = path.abspath(target_path)
         if path.basename(abs_target_path) not in listdir(path.dirname(abs_target_path)):
-            raise SystemExit('Path "{}" does not exist! Please notice it\'s case-sensitive.'.format(abs_target_path))
+            raise SystemExit('\x1B[31mPath "{}" does not exist! Please notice it\'s case-sensitive.\x1B[0m'.format(abs_target_path))
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -49,12 +49,12 @@ class XUnique(object):
             self.xcode_pbxproj_path = abs_target_path
             self.xcodeproj_path = path.dirname(self.xcode_pbxproj_path)
         else:
-            raise SystemExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
+            raise SystemExit("\x1B[31mPath must be dir '.xcodeproj' or file 'project.pbxproj\x1B[0m'")
         self.verbose = verbose
         self.vprint = print if self.verbose else lambda *a, **k: None
         self.proj_root = self.get_proj_root()
         if not self.proj_root:
-            self.vprint('PBXProject name not found, using .xcodeproj dir name instead')
+            self.vprint('\x1B[33mPBXProject name not found, using .xcodeproj dir name instead\x1B[0m')
             self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
@@ -77,11 +77,11 @@ class XUnique(object):
             json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
             return json_loads(json_unicode_str)
         except CalledProcessError as cpe:
-            print(cpe.output)
+            print("\x1B[31m", cpe.output, "\x1B[0m", sep='')
             raise SystemExit(
-                """Please check:
+                """\x1B[31mPlease check:
 1. You have installed Xcode Command Line Tools and command 'plutil' could be found in $PATH;
-2. The project file does not contain merge conflicts""")
+2. The project file does not contain merge conflicts\x1B[0m""")
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -143,7 +143,7 @@ class XUnique(object):
             debug_result_file_path = path.join(self.xcodeproj_path, 'debug_result.json')
             with open(debug_result_file_path, 'w') as debug_result_file:
                 json_dump(self.__result, debug_result_file)
-            self.vprint("result json file has been written to '{}'".format(debug_result_file_path))
+            self.vprint("\x1B[33mDebug result json file has been written to '", debug_result_file_path, "'\x1B[0m", sep='')
         self.replace_uuids_with_file()
 
 
@@ -171,10 +171,10 @@ class XUnique(object):
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
-            print('Ignore uniquify, no changes made to', self.xcode_pbxproj_path)
+            print('\x1B[33mIgnore uniquify, no changes made to "', self.xcode_pbxproj_path, '"\x1B[0m',sep='')
         else:
             unlink(tmp_path)
-            print('Uniquify done')
+            print('\x1B[32mUniquify done\x1B[0m')
 
     def sort_pbxproj_pl(self):
         """
@@ -194,7 +194,7 @@ class XUnique(object):
                 filename=sort_script_path)
             if int(http_msgs['content-length']) < 1000:  # current is 6430
                 raise SystemExit(
-                    'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
+                    '\x1B[31mCannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"\x1B[0m')
             for line in fi_input(sort_script_path, inplace=1, backup='.sbak'):
                 print(line.replace('{24}', '{32}'), end='')
             fi_close()
@@ -297,10 +297,10 @@ class XUnique(object):
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
-            print('Ignore sort, no changes made to', self.xcode_pbxproj_path)
+            print('\x1B[33mIgnore sort, no changes made to "', self.xcode_pbxproj_path,'"\x1B[0m', sep='')
         else:
             unlink(tmp_path)
-            print('Sort done')
+            print('\x1B[32mSort done\x1B[0m')
 
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
@@ -377,7 +377,7 @@ class XUnique(object):
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
         '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase PBXCopyFilesBuildPhase'''
-        self.vprint('uniquify PBXSourcesBuildPhase, PBXFrameworksBuildPhase and PBXResourcesBuildPhase')
+        self.vprint('uniquify all kinds of PBX*BuildPhase')
         current_node = self.nodes[build_phase_hex]
         # no useful key, use its isa value
         cur_path_key = current_node['isa']
@@ -431,13 +431,14 @@ def main(sys_args):
     (options, args) = parser.parse_args(sys_args[1:])
     if len(args) < 1:
         parser.print_help()
-        raise SystemExit("xUnique requires at least one positional argument: relative/absolute path to xcodeproj.")
+        raise SystemExit(
+            "\x1B[31mxUnique requires at least one positional argument: relative/absolute path to xcodeproj.\x1B[0m")
     xcode_proj_path = args[0].decode(sys_get_fs_encoding())
     xunique = XUnique(xcode_proj_path, options.verbose)
     if not (options.unique_bool or options.sort_bool):
         print("Uniquify and Sort")
         xunique.unique_pbxproj()
-        print("Uniquify and Sort done")
+        print("\x1B[32mUniquify and Sort done\x1B[0m")
     else:
         if options.unique_bool:
             print('Uniquify...')
