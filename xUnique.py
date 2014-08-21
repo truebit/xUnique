@@ -21,7 +21,7 @@ the License.
 from __future__ import unicode_literals
 from __future__ import print_function
 from subprocess import (check_output as sp_co, check_call as sp_cc, CalledProcessError)
-from os import path, unlink, rename
+from os import path, unlink, rename, listdir
 from hashlib import md5 as hl_md5
 from json import (loads as json_loads, dump as json_dump)
 from urllib import urlretrieve
@@ -40,14 +40,14 @@ class XUnique(object):
     def __init__(self, target_path, verbose=False):
         # check project path
         abs_target_path = path.abspath(target_path)
-        if not path.exists(abs_target_path):
-            raise SystemExit('Path "{!r}" does not exist!'.format(abs_target_path))
+        if path.basename(abs_target_path) not in listdir(path.dirname(abs_target_path)):
+            raise SystemExit('Path "{}" does not exist! Please notice it\'s case-sensitive.'.format(abs_target_path))
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
         elif abs_target_path.endswith('project.pbxproj'):
             self.xcode_pbxproj_path = abs_target_path
-            self.xcodeproj_path = path.split(self.xcode_pbxproj_path)[0]
+            self.xcodeproj_path = path.dirname(self.xcode_pbxproj_path)
         else:
             raise SystemExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
         self.verbose = verbose
