@@ -81,7 +81,7 @@ class XUnique(object):
             raise SystemExit(
                 """\x1B[31mPlease check:
 1. You have installed Xcode Command Line Tools and command 'plutil' could be found in $PATH;
-2. The project file does not contain merge conflicts\x1B[0m""")
+2. The project file is not damaged, such like merge conflicts, incomplete content due to xUnique failure. \x1B[0m""")
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -164,8 +164,14 @@ class XUnique(object):
                     continue
                 else:
                     for uuid in uuid_list:
-                        new_line = new_line.replace(uuid, self.__result[uuid]['new_key'])
-                    print(new_line.encode('utf-8'), end='')
+                        old_key_dict = self.__result.get(uuid)
+                        if old_key_dict:
+                            new_key = old_key_dict['new_key']
+                            new_line = new_line.replace(uuid, new_key)
+                            print(new_line.encode('utf-8'), end='')
+                        else:
+                            #remove incorrect entry that somehow does not exist in project node tree
+                            continue
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.ubak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
