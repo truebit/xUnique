@@ -34,6 +34,17 @@ from optparse import OptionParser
 
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
+def warning_print(*args, **kwargs):
+    new_args = deque(args)
+    new_args.appendleft('\x1B[33m')
+    new_args.append('\x1B[0m')
+    print(*new_args, **kwargs)
+
+def success_print(*args, **kwargs):
+    new_args = deque(args)
+    new_args.appendleft('\x1B[32m')
+    new_args.append('\x1B[0m')
+    print(*new_args, **kwargs)
 
 
 class XUnique(object):
@@ -41,7 +52,7 @@ class XUnique(object):
         # check project path
         abs_target_path = path.abspath(target_path)
         if not path.exists(abs_target_path):
-            raise SystemExit('\x1B[31mPath "{}" not found!\x1B[0m'.format(abs_target_path))
+            raise XUniqueExit('Path "{}" not found!'.format(abs_target_path))
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -49,13 +60,10 @@ class XUnique(object):
             self.xcode_pbxproj_path = abs_target_path
             self.xcodeproj_path = path.dirname(self.xcode_pbxproj_path)
         else:
-            raise SystemExit("\x1B[31mPath must be dir '.xcodeproj' or file 'project.pbxproj\x1B[0m'")
+            raise XUniqueExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
         self.verbose = verbose
         self.vprint = print if self.verbose else lambda *a, **k: None
         self.proj_root = self.get_proj_root()
-        if not self.proj_root:
-            self.vprint('\x1B[33mPBXProject name not found, using .xcodeproj dir name instead\x1B[0m')
-            self.proj_root = path.basename(self.xcodeproj_path)  # example MyProject.xpbproj
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
         self.root_hex = self.proj_json['rootObject']
@@ -75,18 +83,17 @@ class XUnique(object):
     @property
     def is_modified(self):
         return self._is_modified
-    
+
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
         try:
             json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
             return json_loads(json_unicode_str)
         except CalledProcessError as cpe:
-            print("\x1B[31m", cpe.output, "\x1B[0m", sep='')
-            raise SystemExit(
-                """\x1B[31mPlease check:
+            raise XUniqueExit("""{}
+Please check:
 1. You have installed Xcode Command Line Tools and command 'plutil' could be found in $PATH;
-2. The project file is not damaged, such like merge conflicts, incomplete content due to xUnique failure. \x1B[0m""")
+2. The project file is not broken, such like merge conflicts, incomplete content due to xUnique failure. """.format(cpe.output))
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -123,7 +130,7 @@ class XUnique(object):
                 if result:
                     # Backward compatibility using suffix
                     return '{}.xcodeproj'.format(result.group())
-        raise SystemExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
+        raise XUniqueExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
 
     def unique_project(self):
         """iterate all nodes in pbxproj file:
@@ -148,7 +155,7 @@ class XUnique(object):
             debug_result_file_path = path.join(self.xcodeproj_path, 'debug_result.json')
             with open(debug_result_file_path, 'w') as debug_result_file:
                 json_dump(self.__result, debug_result_file)
-            self.vprint("\x1B[33mDebug result json file has been written to '", debug_result_file_path, "'\x1B[0m", sep='')
+            warning_print("Debug result json file has been written to '", debug_result_file_path, sep='')
         self.replace_uuids_with_file()
 
 
@@ -182,11 +189,11 @@ class XUnique(object):
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
-            print('\x1B[33mIgnore uniquify, no changes made to "', self.xcode_pbxproj_path, '"\x1B[0m',sep='')
+            warning_print('Ignore uniquify, no changes made to "', self.xcode_pbxproj_path, sep='')
         else:
             unlink(tmp_path)
             self._is_modified = True
-            print('\x1B[32mUniquify done\x1B[0m')
+            success_print('Uniquify done')
 
     def sort_pbxproj_pl(self):
         """
@@ -205,8 +212,8 @@ class XUnique(object):
                 'https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file',
                 filename=sort_script_path)
             if int(http_msgs['content-length']) < 1000:  # current is 6430
-                raise SystemExit(
-                    '\x1B[31mCannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"\x1B[0m')
+                raise XUniqueExit(
+                    'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
             for line in fi_input(sort_script_path, inplace=1, backup='.sbak'):
                 print(line.replace('{24}', '{32}'), end='')
             fi_close()
@@ -309,11 +316,11 @@ class XUnique(object):
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
             unlink(self.xcode_pbxproj_path)
             rename(tmp_path, self.xcode_pbxproj_path)
-            print('\x1B[33mIgnore sort, no changes made to "', self.xcode_pbxproj_path,'"\x1B[0m', sep='')
+            warning_print('Ignore sort, no changes made to "', self.xcode_pbxproj_path, sep='')
         else:
             unlink(tmp_path)
             self._is_modified = True
-            print('\x1B[32mSort done\x1B[0m')
+            success_print('Sort done')
 
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
@@ -429,6 +436,11 @@ class XUnique(object):
             else:
                 self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
+class XUniqueExit(SystemExit):
+    def __init__(self,value):
+        value = "\x1B[31m{}\x1B[0m".format(value)
+        super(XUniqueExit, self).__init__(value)
+
 
 def main(sys_args):
     usage = "usage: %prog [-v|-verbose][-u|--unique][-s|--sort] path/to/Project.xcodeproj"
@@ -447,14 +459,14 @@ def main(sys_args):
     (options, args) = parser.parse_args(sys_args[1:])
     if len(args) < 1:
         parser.print_help()
-        raise SystemExit(
-            "\x1B[31mxUnique requires at least one positional argument: relative/absolute path to xcodeproj.\x1B[0m")
+        raise XUniqueExit(
+            "xUnique requires at least one positional argument: relative/absolute path to xcodeproj.")
     xcode_proj_path = args[0].decode(sys_get_fs_encoding())
     xunique = XUnique(xcode_proj_path, options.verbose)
     if not (options.unique_bool or options.sort_bool):
         print("Uniquify and Sort")
         xunique.unique_pbxproj()
-        print("\x1B[32mUniquify and Sort done\x1B[0m")
+        success_print("Uniquify and Sort done")
     else:
         if options.unique_bool:
             print('Uniquify...')
@@ -464,10 +476,10 @@ def main(sys_args):
             xunique.sort_pbxproj()
     if options.combine_commit:
         if xunique.is_modified:
-            raise SystemExit("\x1B[31mFile 'project.pbxproj' was modified, please add it and then commit.\x1B[0m")
+            raise XUniqueExit("File 'project.pbxproj' was modified, please add it and then commit.")
     else:
         if xunique.is_modified:
-            print("\x1B[33mFile 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.\x1B[0m")
+            warning_print("File 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.")
 
 
 if __name__ == '__main__':
