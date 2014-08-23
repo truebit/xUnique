@@ -40,8 +40,8 @@ class XUnique(object):
     def __init__(self, target_path, verbose=False):
         # check project path
         abs_target_path = path.abspath(target_path)
-        if path.basename(abs_target_path) not in listdir(path.dirname(abs_target_path)):
-            raise SystemExit('\x1B[31mPath "{}" not found! Please notice it\'s case-sensitive.\x1B[0m'.format(abs_target_path))
+        if not path.exists(abs_target_path):
+            raise SystemExit('\x1B[31mPath "{}" not found!\x1B[0m'.format(abs_target_path))
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -123,7 +123,7 @@ class XUnique(object):
                 if result:
                     # Backward compatibility using suffix
                     return '{}.xcodeproj'.format(result.group())
-        return None
+        raise SystemExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
 
     def unique_project(self):
         """iterate all nodes in pbxproj file:
