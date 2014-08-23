@@ -41,7 +41,7 @@ class XUnique(object):
         # check project path
         abs_target_path = path.abspath(target_path)
         if path.basename(abs_target_path) not in listdir(path.dirname(abs_target_path)):
-            raise SystemExit('\x1B[31mPath "{}" does not exist! Please notice it\'s case-sensitive.\x1B[0m'.format(abs_target_path))
+            raise SystemExit('\x1B[31mPath "{}" not found! Please notice it\'s case-sensitive.\x1B[0m'.format(abs_target_path))
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -70,7 +70,12 @@ class XUnique(object):
                                 'type': self.root_node['isa']
                 }
             })
+        self._is_modified = False
 
+    @property
+    def is_modified(self):
+        return self._is_modified
+    
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
         try:
@@ -180,6 +185,7 @@ class XUnique(object):
             print('\x1B[33mIgnore uniquify, no changes made to "', self.xcode_pbxproj_path, '"\x1B[0m',sep='')
         else:
             unlink(tmp_path)
+            self._is_modified = True
             print('\x1B[32mUniquify done\x1B[0m')
 
     def sort_pbxproj_pl(self):
@@ -306,6 +312,7 @@ class XUnique(object):
             print('\x1B[33mIgnore sort, no changes made to "', self.xcode_pbxproj_path,'"\x1B[0m', sep='')
         else:
             unlink(tmp_path)
+            self._is_modified = True
             print('\x1B[32mSort done\x1B[0m')
 
     def __unique_project(self, project_hex):
@@ -434,6 +441,9 @@ def main(sys_args):
                       help="uniquify the project file. default is False.")
     parser.add_option("-s", "--sort", action="store_true", dest="sort_bool", default=False,
                       help="sort the project file. default is False.")
+    parser.add_option("-c", "--combine-commit",
+                      action="store_true", dest="combine_commit", default=False,
+                      help="When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.")
     (options, args) = parser.parse_args(sys_args[1:])
     if len(args) < 1:
         parser.print_help()
@@ -452,6 +462,12 @@ def main(sys_args):
         if options.sort_bool:
             print('Sort...')
             xunique.sort_pbxproj()
+    if options.combine_commit:
+        if xunique.is_modified:
+            raise SystemExit("\x1B[31mFile 'project.pbxproj' was modified, please add it and then commit.\x1B[0m")
+    else:
+        if xunique.is_modified:
+            print("\x1B[33mFile 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.\x1B[0m")
 
 
 if __name__ == '__main__':
