@@ -173,13 +173,9 @@ Please check:
                 # remove line with non-existing element
                 if self.__result.get('to_be_removed') and any(
                         i for i in uuid_list if i in self.__result['to_be_removed']):
-                    if self.verbose:
-                        warning_print("Removed line:",new_line)
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in uuid_list):
-                    if self.verbose:
-                        warning_print("Removed line:",new_line)
                     continue
                 else:
                     for uuid in uuid_list:
