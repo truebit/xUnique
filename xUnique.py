@@ -173,17 +173,19 @@ Please check:
                 # remove line with non-existing element
                 if self.__result.get('to_be_removed') and any(
                         i for i in uuid_list if i in self.__result['to_be_removed']):
+                    if self.verbose:
+                        warning_print("Removed line:",new_line)
+                    continue
+                # remove incorrect entry that somehow does not exist in project node tree
+                elif not all(self.__result.get(uuid) for uuid in uuid_list):
+                    if self.verbose:
+                        warning_print("Removed line:",new_line)
                     continue
                 else:
                     for uuid in uuid_list:
-                        old_key_dict = self.__result.get(uuid)
-                        if old_key_dict:
-                            new_key = old_key_dict['new_key']
-                            new_line = new_line.replace(uuid, new_key)
-                            print(new_line.encode('utf-8'), end='')
-                        else:
-                            #remove incorrect entry that somehow does not exist in project node tree
-                            continue
+                        new_key = self.__result[uuid]['new_key']
+                        new_line = new_line.replace(uuid, new_key)
+                    print(new_line.encode('utf-8'), end='')
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.ubak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
