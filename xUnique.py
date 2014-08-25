@@ -35,15 +35,15 @@ from optparse import OptionParser
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 def warning_print(*args, **kwargs):
-    new_args = deque(args)
-    new_args.appendleft('\x1B[33m')
-    new_args.append('\x1B[0m')
+    new_args = list(args)
+    new_args[0] = '\x1B[33m{}'.format(new_args[0])
+    new_args[-1] = '{}\x1B[0m'.format(new_args[-1])
     print(*new_args, **kwargs)
 
 def success_print(*args, **kwargs):
-    new_args = deque(args)
-    new_args.appendleft('\x1B[32m')
-    new_args.append('\x1B[0m')
+    new_args = list(args)
+    new_args[0] = '\x1B[32m{}'.format(new_args[0])
+    new_args[-1] = '{}\x1B[0m'.format(new_args[-1])
     print(*new_args, **kwargs)
 
 
