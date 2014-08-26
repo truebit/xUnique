@@ -42,7 +42,7 @@ There are many ways to use this script. I will introduce two types:
      ```
   8. click `Close` and it's all done.
   9. Next time when you Build or Run the project, xUnique would be triggered after build success. If the build works, you could commit all files.
-  10. Demo gif animation is [here](#Examples)
+  10. Demo gif animation is [here](#add-xunique-to-xcode-post-action)
      
 ##### Git hook
   1. Put **xUnique.py** file in your project repository somewhere and add it as track file via `git add path/to/xUnique.py`, so all members could use the same script
@@ -61,11 +61,11 @@ There are many ways to use this script. I will introduce two types:
 * `-c`: When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.
     
 #### Git merge strategy
-    * There are still conflicts after using xUnique. That's because the incorrect merge strategy used by Git against project file.
-    * use [Git Attributes](http://git-scm.com/book/en/Customizing-Git-Git-Attributes) to make git know how to deal with `project.pbxproj`:
-      * create a file named `.gitattributes` in git repo root directory (a.k.a the same level with `.git` directory) if it does not exist
-      * add line `*.pbxproj text -crlf -diff -merge=union` in the file
-      * save file and add this file to git repo
+* There are still conflicts after using xUnique. That's because the incorrect merge strategy used by Git against project file.
+* use [Git Attributes](http://git-scm.com/book/en/Customizing-Git-Git-Attributes) to make git know how to deal with `project.pbxproj`:
+* create a file named `.gitattributes` in git repo root directory (a.k.a the same level with `.git` directory) if it does not exist
+* add line `*.pbxproj text -crlf -diff -merge=union` in the file
+* save file and add this file to git repo
       
 
 ### Examples
