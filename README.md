@@ -49,7 +49,6 @@ There are many ways to use this script. I will introduce two types:
   2. create a git hook like `{ echo '#!/bin/sh'; echo 'python2 path/to/xUnique.py path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit`
   3. Add permission `chmod 755 .git/hooks/pre-commit` 
   4. xUnique will be triggered when you trying to commit:
-  	* If you added or removed files in the commit, Xcode will sort all `PBXBuildFile` and `PBXFileReference` by MD5 hex number, this will disorder the project file taht was sorted by xUnique before.
   	* Using option `-c` in command would fail the commit operation if project file is modified. Then you can add the modified project file and commit all the files again.
   	* Option `-c` is not activated by default. The commit operation will proceed successfully even if the project file is modified by xUnique. So do not push the commit unless you add the modified project file again and do another commit.
 
