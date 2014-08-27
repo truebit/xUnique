@@ -114,11 +114,6 @@ Please check:
             }
         })
 
-    def unique_pbxproj(self):
-        """"""
-        self.unique_project()
-        self.sort_pbxproj()
-
     def get_proj_root(self):
         '''PBXProject name,the root node'''
         pbxproject_ptn = re_compile('(?<=PBXProject ").*(?=")')
@@ -167,7 +162,7 @@ Please check:
             line = line.decode('utf-8')
             uuid_list = uuid_ptn.findall(line)
             if not uuid_list:
-                print(line.encode('utf-8'), end='')
+                print(line, end='')
             else:
                 new_line = line
                 # remove line with non-existing element
@@ -181,7 +176,7 @@ Please check:
                     for uuid in uuid_list:
                         new_key = self.__result[uuid]['new_key']
                         new_line = new_line.replace(uuid, new_key)
-                    print(new_line.encode('utf-8'), end='')
+                    print(new_line, end='')
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.ubak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
@@ -219,7 +214,7 @@ Please check:
         self.vprint('sort project.xpbproj file')
         sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
 
-    def sort_pbxproj(self):
+    def sort_pbxproj(self, sort_pbx=False):
         self.vprint('sort project.xpbproj file')
         uuid_chars = len(self.main_group_hex)
         lines = []
@@ -264,7 +259,7 @@ Please check:
                 if fc_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
-                        print(''.join(lines).encode('utf-8'), end='')
+                        print(''.join(lines), end='')
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
@@ -283,29 +278,30 @@ Please check:
                         if self.main_group_hex not in last_two[0]:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),
                                        cmp=file_dir_cmp)
-                        print(''.join(lines).encode('utf-8'), end='')
+                        print(''.join(lines), end='')
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
                 elif children_pbx_key_ptn.search(line):
                     lines.append(line)
             # PBX search and sort
-            pbx_match = pbx_start_ptn.search(line)
-            if pbx_match:
-                print(line, end='')
-                pbx_flag = True
-                if isinstance(pbx_end_ptn, tuple):
-                    pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
-            if pbx_flag:
-                if pbx_end_ptn.search(line):
-                    if lines:
-                        lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
-                        print(''.join(lines).encode('utf-8'), end='')
-                        lines = []
-                    pbx_flag = False
-                    pbx_end_ptn = ('^.*End ', ' section.*')
-                elif children_pbx_key_ptn.search(line):
-                    lines.append(line)
+            if sort_pbx:
+                pbx_match = pbx_start_ptn.search(line)
+                if pbx_match:
+                    print(line, end='')
+                    pbx_flag = True
+                    if isinstance(pbx_end_ptn, tuple):
+                        pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
+                if pbx_flag:
+                    if pbx_end_ptn.search(line):
+                        if lines:
+                            lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
+                            print(''.join(lines).encode('utf-8'), end='')
+                            lines = []
+                        pbx_flag = False
+                        pbx_end_ptn = ('^.*End ', ' section.*')
+                    elif children_pbx_key_ptn.search(line):
+                        lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
                 print(line, end='')
@@ -451,9 +447,10 @@ def main(sys_args):
                       help="uniquify the project file. default is False.")
     parser.add_option("-s", "--sort", action="store_true", dest="sort_bool", default=False,
                       help="sort the project file. default is False.")
-    parser.add_option("-c", "--combine-commit",
-                      action="store_true", dest="combine_commit", default=False,
+    parser.add_option("-c", "--combine-commit", action="store_true", dest="combine_commit", default=False,
                       help="When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.")
+    parser.add_option("-p", "--sort-pbx", action="store_true", dest="sort_pbx_bool", default=False,
+                      help="sort PBXFileReference and PBXBuildFile sections in project file. default is False.")
     (options, args) = parser.parse_args(sys_args[1:])
     if len(args) < 1:
         parser.print_help()
@@ -463,7 +460,8 @@ def main(sys_args):
     xunique = XUnique(xcode_proj_path, options.verbose)
     if not (options.unique_bool or options.sort_bool):
         print("Uniquify and Sort")
-        xunique.unique_pbxproj()
+        xunique.unique_project()
+        xunique.sort_pbxproj(options.sort_pbx_bool)
         success_print("Uniquify and Sort done")
     else:
         if options.unique_bool:
@@ -471,7 +469,7 @@ def main(sys_args):
             xunique.unique_project()
         if options.sort_bool:
             print('Sort...')
-            xunique.sort_pbxproj()
+            xunique.sort_pbxproj(options.sort_pbx_bool)
     if options.combine_commit:
         if xunique.is_modified:
             raise XUniqueExit("File 'project.pbxproj' was modified, please add it and then commit.")
