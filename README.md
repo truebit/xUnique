@@ -56,7 +56,7 @@ There are many ways to use this script. I will introduce two types:
 * `-v`: print verbose output, and generate `debug_result.json` file for debug.
 * `-u`: uniquify project file, that is, replace UUID to MD5 digest.
 * `-s`: sort project file inlcuding `children` list, `files` list. Supports both original and uniquified project file. 
-* `-p`: sort `PBXFileReference` and `PBXBuildFile` sections in project file ordered by file names. v3.1.0 and before are enabled in `-s` option and cannot be turned off. After v3.1.0, it's off by default and add this option to turn on like before as I found that these two types are sorted by Xcode and ordered by MD5 values automatically.
+* `-p`: sort `PBXFileReference` and `PBXBuildFile` sections in project file ordered by file names. v3.1.0 and before are enabled in `-s` option and cannot be turned off. After v3.1.0, without this option, xUnique will sort these two types by MD5 digests, the same as Xcode does.
 * `-c`: When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.
 * if neither `-u` nor `-s` exists, `-u -s` will be appended to existing option list.
 

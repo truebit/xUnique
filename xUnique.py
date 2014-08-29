@@ -214,7 +214,7 @@ Please check:
         self.vprint('sort project.xpbproj file')
         sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
 
-    def sort_pbxproj(self, sort_pbx=False):
+    def sort_pbxproj(self, sort_pbx_by_file_name = False):
         self.vprint('sort project.xpbproj file')
         uuid_chars = len(self.main_group_hex)
         lines = []
@@ -226,6 +226,7 @@ Please check:
         children_pbx_key_ptn = re_compile('(?<=[A-F0-9]{{{}}} \/\* ).+?(?= \*\/)'.format(uuid_chars))
         child_flag = False
         pbx_start_ptn = re_compile('^.*Begin (PBXBuildFile|PBXFileReference) section.*$')
+        pbx_key_ptn = re_compile('^\s+([A-F0-9]{{{}}})(?= \/\*)'.format(uuid_chars))
         pbx_end_ptn = ('^.*End ', ' section.*$')
         pbx_flag = False
         last_two = deque([])
@@ -285,22 +286,24 @@ Please check:
                 elif children_pbx_key_ptn.search(line):
                     lines.append(line)
             # PBX search and sort
-            if sort_pbx:
-                pbx_match = pbx_start_ptn.search(line)
-                if pbx_match:
-                    print(line, end='')
-                    pbx_flag = True
-                    if isinstance(pbx_end_ptn, tuple):
-                        pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
-                if pbx_flag:
-                    if pbx_end_ptn.search(line):
-                        if lines:
+            pbx_match = pbx_start_ptn.search(line)
+            if pbx_match:
+                print(line, end='')
+                pbx_flag = True
+                if isinstance(pbx_end_ptn, tuple):
+                    pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
+            if pbx_flag:
+                if pbx_end_ptn.search(line):
+                    if lines:
+                        if sort_pbx_by_file_name:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
-                            print(''.join(lines).encode('utf-8'), end='')
-                            lines = []
-                        pbx_flag = False
-                        pbx_end_ptn = ('^.*End ', ' section.*')
-                    elif children_pbx_key_ptn.search(line):
+                        else:
+                            lines.sort(key=lambda file_str: pbx_key_ptn.search(file_str).group(1))
+                        print(''.join(lines), end='')
+                        lines = []
+                    pbx_flag = False
+                    pbx_end_ptn = ('^.*End ', ' section.*')
+                elif children_pbx_key_ptn.search(line):
                         lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
@@ -437,7 +440,7 @@ class XUniqueExit(SystemExit):
 
 
 def main(sys_args):
-    usage = "usage: %prog [-v|-verbose][-u|--unique][-s|--sort] path/to/Project.xcodeproj"
+    usage = "usage: %prog [-v][-u][-s][-c][-p] path/to/Project.xcodeproj"
     description = "By default, without any option, xUnique uniquify and sort the project file."
     parser = OptionParser(usage=usage, description=description)
     parser.add_option("-v", "--verbose",
@@ -449,8 +452,8 @@ def main(sys_args):
                       help="sort the project file. default is False.")
     parser.add_option("-c", "--combine-commit", action="store_true", dest="combine_commit", default=False,
                       help="When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.")
-    parser.add_option("-p", "--sort-pbx", action="store_true", dest="sort_pbx_bool", default=False,
-                      help="sort PBXFileReference and PBXBuildFile sections in project file. default is False.")
+    parser.add_option("-p", "--sort-pbx-by-filename", action="store_true", dest="sort_pbx_fn_bool", default=False,
+                      help="sort PBXFileReference and PBXBuildFile sections in project file, ordered by file name. Without this option, ordered by MD5 digest, the same as Xcode does.")
     (options, args) = parser.parse_args(sys_args[1:])
     if len(args) < 1:
         parser.print_help()
@@ -461,7 +464,7 @@ def main(sys_args):
     if not (options.unique_bool or options.sort_bool):
         print("Uniquify and Sort")
         xunique.unique_project()
-        xunique.sort_pbxproj(options.sort_pbx_bool)
+        xunique.sort_pbxproj(options.sort_pbx_fn_bool)
         success_print("Uniquify and Sort done")
     else:
         if options.unique_bool:
@@ -469,7 +472,7 @@ def main(sys_args):
             xunique.unique_project()
         if options.sort_bool:
             print('Sort...')
-            xunique.sort_pbxproj(options.sort_pbx_bool)
+            xunique.sort_pbxproj(options.sort_pbx_fn_bool)
     if options.combine_commit:
         if xunique.is_modified:
             raise XUniqueExit("File 'project.pbxproj' was modified, please add it and then commit.")
