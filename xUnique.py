@@ -34,6 +34,7 @@ from optparse import OptionParser
 
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
+output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
 def warning_print(*args, **kwargs):
     new_args = list(args)
     new_args[0] = '\x1B[33m{}'.format(new_args[0])
@@ -162,7 +163,7 @@ Please check:
             line = line.decode('utf-8')
             uuid_list = uuid_ptn.findall(line)
             if not uuid_list:
-                print(line, end='')
+                output_u8line(line)
             else:
                 new_line = line
                 # remove line with non-existing element
@@ -176,7 +177,7 @@ Please check:
                     for uuid in uuid_list:
                         new_key = self.__result[uuid]['new_key']
                         new_line = new_line.replace(uuid, new_key)
-                    print(new_line, end='')
+                    output_u8line(new_line)
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.ubak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
@@ -208,7 +209,7 @@ Please check:
                 raise XUniqueExit(
                     'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
             for line in fi_input(sort_script_path, inplace=1, backup='.sbak'):
-                print(line.replace('{24}', '{32}'), end='')
+                output_u8line(line.replace('{24}', '{32}'))
             fi_close()
             unlink(sort_script_path + '.sbak')
         self.vprint('sort project.xpbproj file')
@@ -252,7 +253,7 @@ Please check:
             # files search and sort
             files_match = files_start_ptn.search(line)
             if files_match:
-                print(line, end='')
+                output_u8line(line)
                 files_flag = True
                 if isinstance(fc_end_ptn, unicode):
                     fc_end_ptn = re_compile(files_match.group(1) + fc_end_ptn)
@@ -260,7 +261,7 @@ Please check:
                 if fc_end_ptn.search(line):
                     if lines:
                         lines.sort(key=lambda file_str: files_key_ptn.search(file_str).group())
-                        print(''.join(lines), end='')
+                        output_u8line(''.join(lines))
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
@@ -269,7 +270,7 @@ Please check:
             # children search and sort
             children_match = children_start_ptn.search(line)
             if children_match:
-                print(line, end='')
+                output_u8line(line)
                 child_flag = True
                 if isinstance(fc_end_ptn, unicode):
                     fc_end_ptn = re_compile(children_match.group(1) + fc_end_ptn)
@@ -279,7 +280,7 @@ Please check:
                         if self.main_group_hex not in last_two[0]:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),
                                        cmp=file_dir_cmp)
-                        print(''.join(lines), end='')
+                        output_u8line(''.join(lines))
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
@@ -288,7 +289,7 @@ Please check:
             # PBX search and sort
             pbx_match = pbx_start_ptn.search(line)
             if pbx_match:
-                print(line, end='')
+                output_u8line(line)
                 pbx_flag = True
                 if isinstance(pbx_end_ptn, tuple):
                     pbx_end_ptn = re_compile(pbx_match.group(1).join(pbx_end_ptn))
@@ -299,7 +300,7 @@ Please check:
                             lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group())
                         else:
                             lines.sort(key=lambda file_str: pbx_key_ptn.search(file_str).group(1))
-                        print(''.join(lines), end='')
+                        output_u8line(''.join(lines))
                         lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
@@ -307,7 +308,7 @@ Please check:
                         lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
-                print(line, end='')
+                output_u8line(line)
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.sbak'
         if filecmp_cmp(self.xcode_pbxproj_path, tmp_path, shallow=False):
