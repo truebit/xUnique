@@ -264,7 +264,7 @@ Please check:
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
-                elif files_key_ptn.search(line):
+                elif files_key_ptn.search(line) and line not in lines:
                     lines.append(line)
             # children search and sort
             children_match = children_start_ptn.search(line)
@@ -283,7 +283,7 @@ Please check:
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
-                elif children_pbx_key_ptn.search(line):
+                elif children_pbx_key_ptn.search(line) and line not in lines:
                     lines.append(line)
             # PBX search and sort
             pbx_match = pbx_start_ptn.search(line)
@@ -303,7 +303,7 @@ Please check:
                         lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
-                elif children_pbx_key_ptn.search(line):
+                elif children_pbx_key_ptn.search(line) and line not in lines:
                         lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
