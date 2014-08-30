@@ -72,7 +72,8 @@ There are many ways to use this script. I will introduce two types:
   * The initial diff result could be found [here](https://github.com/truebit/APNS-Pusher/commit/fb27af54627ca0836aa5eb847766441b991220bf).
   * The diff result with my modified [`sort-Xcode-project-file`](https://github.com/truebit/webkit/blob/7afa105d20fccdec68d8bd778b649409f17cbdc0/Tools/Scripts/sort-Xcode-project-file) with `PBXBuildFile` and `PBXFileReference`sort support could be found [here](https://github.com/truebit/APNS-Pusher/commit/d5ff3dc053c4be96d6c209cc9ced890faad263c9). 
   * Pure python sort result could be found [here](https://github.com/truebit/APNS-Pusher/commit/f79d182b0b5892cbb889b67242845807689bd5e4)
-
+  * PBX sections sorted by MD5 digest result (default in v4.0.0) could be found [here](https://github.com/truebit/APNS-Pusher/commit/5171c08d601500f6d9bda24cbd640074e1e2b3d7)
+  
 ###### add xUnique to Xcode post action
 ![xUnique_Build_Post_Action](https://raw.github.com/truebit/xUnique/gif/xUnique_Build_Post_Action.gif)
 
