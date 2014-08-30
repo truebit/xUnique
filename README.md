@@ -18,7 +18,7 @@ _xUnique_ convert all the 96bits `UUID`(24 hex chars) to MD5 hex digest(32 hex c
 4. Sort the project file inlcuding `children`, `files`, `PBXFileReference` and `PBXBuildFile` list and remove all duplicated entries in these lists 
 	* see `sort_pbxproj` method in xUnique.py if you want to know the implementation;
 	* It's ported from my modified [`sort-Xcode-project-file`](https://github.com/truebit/webkit/commits/master/Tools/Scripts/sort-Xcode-project-file), with some differences in ordering `PBXFileReference` and `PBXBuildFile` 
-5. With different (options)[#supported-argument-options], you can use _xUnique_ with more flexibility
+5. With different [options](#supported-argument-options), you can use _xUnique_ with more flexibility
 
 
 ### How to use
