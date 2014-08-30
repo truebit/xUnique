@@ -64,7 +64,6 @@ class XUnique(object):
             raise XUniqueExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
         self.verbose = verbose
         self.vprint = print if self.verbose else lambda *a, **k: None
-        self.__uniquified = False
         self.proj_root = self.get_proj_root()
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
@@ -154,7 +153,6 @@ Please check:
                 json_dump(self.__result, debug_result_file)
             warning_print("Debug result json file has been written to '", debug_result_file_path, sep='')
         self.replace_uuids_with_file()
-        self.__uniquified = True
 
 
     def replace_uuids_with_file(self):
