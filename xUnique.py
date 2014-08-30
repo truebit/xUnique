@@ -64,6 +64,7 @@ class XUnique(object):
             raise XUniqueExit("Path must be dir '.xcodeproj' or file 'project.pbxproj'")
         self.verbose = verbose
         self.vprint = print if self.verbose else lambda *a, **k: None
+        self.__uniquified = False
         self.proj_root = self.get_proj_root()
         self.proj_json = self.pbxproj_to_json()
         self.nodes = self.proj_json['objects']
@@ -153,6 +154,7 @@ Please check:
                 json_dump(self.__result, debug_result_file)
             warning_print("Debug result json file has been written to '", debug_result_file_path, sep='')
         self.replace_uuids_with_file()
+        self.__uniquified = True
 
 
     def replace_uuids_with_file(self):
@@ -217,17 +219,16 @@ Please check:
 
     def sort_pbxproj(self, sort_pbx_by_file_name = False):
         self.vprint('sort project.xpbproj file')
-        uuid_chars = len(self.main_group_hex)
         lines = []
         files_start_ptn = re_compile('^(\s*)files = \(\s*$')
-        files_key_ptn = re_compile('(?<=[A-F0-9]{{{}}} \/\* ).+?(?= in )'.format(uuid_chars))
+        files_key_ptn = re_compile('((?<=[A-F0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= in )')
         fc_end_ptn = '\);'
         files_flag = False
         children_start_ptn = re_compile('^(\s*)children = \(\s*$')
-        children_pbx_key_ptn = re_compile('(?<=[A-F0-9]{{{}}} \/\* ).+?(?= \*\/)'.format(uuid_chars))
+        children_pbx_key_ptn = re_compile('((?<=[A-F0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= \*\/)')
         child_flag = False
         pbx_start_ptn = re_compile('^.*Begin (PBXBuildFile|PBXFileReference) section.*$')
-        pbx_key_ptn = re_compile('^\s+([A-F0-9]{{{}}})(?= \/\*)'.format(uuid_chars))
+        pbx_key_ptn = re_compile('^\s+(([A-F0-9]{24})|([A-F0-9]{32}))(?= \/\*)')
         pbx_end_ptn = ('^.*End ', ' section.*$')
         pbx_flag = False
         last_two = deque([])
