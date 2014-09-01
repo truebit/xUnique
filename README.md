@@ -14,7 +14,7 @@ _xUnique_ convert all the 96bits `UUID`(24 hex chars) to MD5 hex digest(32 hex c
 	* All elements in this json object is actually connected as a tree
 	* We give a path attribute to every node of the tree using its unique attribute; this path is the absolute path to the root node, 
 	* Apply MD5 hex digest to the path for the node
-3. Replace all old UUIDs with the MD5 hex digest and also remove unused UUIDs if any
+3. Replace all old UUIDs with the MD5 hex digest and also remove unused UUIDs that are not in the current node tree and UUIDs in wrong format
 4. Sort the project file inlcuding `children`, `files`, `PBXFileReference` and `PBXBuildFile` list and remove all duplicated entries in these lists 
 	* see `sort_pbxproj` method in xUnique.py if you want to know the implementation;
 	* It's ported from my modified [`sort-Xcode-project-file`](https://github.com/truebit/webkit/commits/master/Tools/Scripts/sort-Xcode-project-file), with some differences in ordering `PBXFileReference` and `PBXBuildFile` 
@@ -24,7 +24,7 @@ _xUnique_ convert all the 96bits `UUID`(24 hex chars) to MD5 hex digest(32 hex c
 -------------
 
 The [change log](https://github.com/truebit/xUnique/releases)
-contains the list of changes and latest version information of each version. Please use `Latest Release` for production environment.
+contains the list of changes and latest version information of each version. Please download `Latest Release` for production environment usage.
 
 ## How to use
 --------------
@@ -110,8 +110,7 @@ There are many ways to use this script. I will introduce two types:
 
 ## Contributions
 -----------------
-* I only tested on one single project and one project with a subproject, so maybe there should be more unconsidered conditions. 
-If you get any problem, feel free to fire a Pull Request or Issue
+* I only tested on several single projects and  serveral projects with a subproject, so maybe there should be more unconsidered conditions.  If you get any problem, feel free to fire a Pull Request or Issue
 
 * You can also buy me a cup of tea: [![Donate to xUnique](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=QQNATFYESVT76&item_name=xUnique)
 
