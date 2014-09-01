@@ -187,32 +187,6 @@ Please check:
             self._is_modified = True
             success_print('Uniquify done')
 
-    def sort_pbxproj_pl(self):
-        """
-        deprecated, use pure python method sort_pbxproj() below
-
-        https://github.com/truebit/webkit/commits/master/Tools/Scripts/sort-Xcode-project-file
-
-        my modified version which supports:
-        1. sort PBXFileReference and PBXBuildFile sections
-        2. avoid creating new file if no changes made
-        """
-        sort_script_path = path.join(path.dirname(path.abspath(__file__)), 'sort-Xcode-project-file-mod2.pl')
-        if not path.exists(sort_script_path):
-            self.vprint('downloading sort-Xcode-project-file')
-            f_path, http_msgs = urlretrieve(
-                'https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file',
-                filename=sort_script_path)
-            if int(http_msgs['content-length']) < 1000:  # current is 6430
-                raise XUniqueExit(
-                    'Cannot download script file from "https://raw.githubusercontent.com/truebit/webkit/master/Tools/Scripts/sort-Xcode-project-file"')
-            for line in fi_input(sort_script_path, inplace=1, backup='.sbak'):
-                output_u8line(line.replace('{24}', '{32}'))
-            fi_close()
-            unlink(sort_script_path + '.sbak')
-        self.vprint('sort project.xpbproj file')
-        sp_cc(['perl', sort_script_path, self.xcode_pbxproj_path])
-
     def sort_pbxproj(self, sort_pbx_by_file_name = False):
         self.vprint('sort project.xpbproj file')
         lines = []
