@@ -157,7 +157,7 @@ Please check:
 
     def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
-        key_ptn = re_compile('(?<=\s)([0-9A-F]{24}|[0-9A-F]{32})(?=[\s;])')
+        key_ptn = re_compile('(?<=\s)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
@@ -219,14 +219,14 @@ Please check:
         self.vprint('sort project.xpbproj file')
         lines = []
         files_start_ptn = re_compile('^(\s*)files = \(\s*$')
-        files_key_ptn = re_compile('((?<=[A-F0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= in )')
+        files_key_ptn = re_compile('((?<=[A-Z0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= in )')
         fc_end_ptn = '\);'
         files_flag = False
         children_start_ptn = re_compile('^(\s*)children = \(\s*$')
-        children_pbx_key_ptn = re_compile('((?<=[A-F0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= \*\/)')
+        children_pbx_key_ptn = re_compile('((?<=[A-Z0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= \*\/)')
         child_flag = False
         pbx_start_ptn = re_compile('^.*Begin (PBXBuildFile|PBXFileReference) section.*$')
-        pbx_key_ptn = re_compile('^\s+(([A-F0-9]{24})|([A-F0-9]{32}))(?= \/\*)')
+        pbx_key_ptn = re_compile('^\s+(([A-Z0-9]{24})|([A-F0-9]{32}))(?= \/\*)')
         pbx_end_ptn = ('^.*End ', ' section.*$')
         pbx_flag = False
         last_two = deque([])
