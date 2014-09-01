@@ -333,8 +333,12 @@ Please check:
                 project_ref_parent_hex = subproject_dict['ProjectRef']
                 self.__unique_group_or_ref(project_ref_parent_hex, product_group_hex)
         targets_list = self.root_node['targets']
+        # workaround for PBXTargetDependency referring target that have not been iterated
         for target_hex in targets_list:
-            self.__unique_target(project_hex, target_hex)
+            cur_path_key = ('productName', 'name')
+            self.__set_to_result(project_hex, target_hex, cur_path_key)
+        for target_hex in targets_list:
+            self.__unique_target(target_hex)
 
     def __unique_build_configuration_list(self, parent_hex, build_configuration_list_hex):
         '''XCConfigurationList'''
@@ -350,11 +354,9 @@ Please check:
         cur_path_key = 'name'
         self.__set_to_result(parent_hex, build_configuration_hex, cur_path_key)
 
-    def __unique_target(self, parent_hex, target_hex):
-        '''PBXNativeTarget'''
-        self.vprint('uniquify PBXNativeTarget')
-        cur_path_key = ('productName', 'name')
-        self.__set_to_result(parent_hex, target_hex, cur_path_key)
+    def __unique_target(self, target_hex):
+        '''PBXNativeTarget PBXAggregateTarget'''
+        self.vprint('uniquify PBX*Target')
         current_node = self.nodes[target_hex]
         bcl_hex = current_node['buildConfigurationList']
         self.__unique_build_configuration_list(target_hex, bcl_hex)
@@ -368,7 +370,8 @@ Please check:
 
     def __unique_target_dependency(self, parent_hex, target_dependency_hex):
         '''PBXTargetDependency'''
-        self.__set_to_result(parent_hex, target_dependency_hex, 'name')
+        target_hex = self.nodes[target_dependency_hex]['target']
+        self.__set_to_result(parent_hex, target_dependency_hex, self.__result[target_hex]['path'])
         self.__unique_container_item_proxy(target_dependency_hex, self.nodes[target_dependency_hex]['targetProxy'])
 
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
@@ -379,16 +382,17 @@ Please check:
         current_node = self.nodes[container_item_proxy_hex]
         # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
         remote_global_id_hex = current_node['remoteGlobalIDString']
-        portal_hex = current_node['containerPortal']
-        portal_path = self.__result[portal_hex]['path']
-        new_rg_id_path = '{}+{}'.format(cur_path, portal_path)
-        self.__result.update({
-            remote_global_id_hex: {'path': new_rg_id_path,
-                                   'new_key': md5_hex(new_rg_id_path),
-                                   'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
-                                                          'remoteGlobalIDString')
-            }
-        })
+        if remote_global_id_hex not in self.__result.keys():
+            portal_hex = current_node['containerPortal']
+            portal_path = self.__result[portal_hex]['path']
+            new_rg_id_path = '{}+{}'.format(cur_path, portal_path)
+            self.__result.update({
+                remote_global_id_hex: {'path': new_rg_id_path,
+                                       'new_key': md5_hex(new_rg_id_path),
+                                       'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
+                                                              'remoteGlobalIDString')
+                }
+            })
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
         '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase
