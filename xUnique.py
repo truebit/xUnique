@@ -20,11 +20,10 @@ the License.
 
 from __future__ import unicode_literals
 from __future__ import print_function
-from subprocess import (check_output as sp_co, check_call as sp_cc, CalledProcessError)
-from os import path, unlink, rename, listdir
+from subprocess import (check_output as sp_co, CalledProcessError)
+from os import path, unlink, rename
 from hashlib import md5 as hl_md5
 from json import (loads as json_loads, dump as json_dump)
-from urllib import urlretrieve
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
 from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding)
