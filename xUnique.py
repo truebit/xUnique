@@ -152,31 +152,31 @@ Please check:
             with open(debug_result_file_path, 'w') as debug_result_file:
                 json_dump(self.__result, debug_result_file)
             warning_print("Debug result json file has been written to '", debug_result_file_path, sep='')
-        self.replace_uuids_with_file()
+        self.substitute_old_keys()
 
 
-    def replace_uuids_with_file(self):
+    def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
-        uuid_ptn = re_compile('(?<=\s)[0-9A-F]{24}(?=[\s;])')
+        key_ptn = re_compile('(?<=\s)([0-9A-F]{24}|[0-9A-F]{32})(?=[\s;])')
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
-            uuid_list = uuid_ptn.findall(line)
-            if not uuid_list:
+            key_list = key_ptn.findall(line)
+            if not key_list:
                 output_u8line(line)
             else:
                 new_line = line
                 # remove line with non-existing element
                 if self.__result.get('to_be_removed') and any(
-                        i for i in uuid_list if i in self.__result['to_be_removed']):
+                        i for i in key_list if i in self.__result['to_be_removed']):
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
-                elif not all(self.__result.get(uuid) for uuid in uuid_list):
+                elif not all(self.__result.get(uuid) for uuid in key_list):
                     continue
                 else:
-                    for uuid in uuid_list:
-                        new_key = self.__result[uuid]['new_key']
-                        new_line = new_line.replace(uuid, new_key)
+                    for key in key_list:
+                        new_key = self.__result[key]['new_key']
+                        new_line = new_line.replace(key, new_key)
                     output_u8line(new_line)
         fi_close()
         tmp_path = self.xcode_pbxproj_path + '.ubak'
