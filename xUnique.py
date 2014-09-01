@@ -137,9 +137,7 @@ Please check:
         PBXTargetDependency
         PBXContainerItemProxy
         XCBuildConfiguration
-        PBXSourcesBuildPhase
-        PBXFrameworksBuildPhase
-        PBXResourcesBuildPhase
+        PBX*BuildPhase
         PBXBuildFile
         PBXReferenceProxy
         PBXFileReference
@@ -393,11 +391,17 @@ Please check:
         })
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
-        '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase PBXCopyFilesBuildPhase'''
+        '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase
+        PBXCopyFilesBuildPhase PBXHeadersBuildPhase PBXShellScriptBuildPhase
+        '''
         self.vprint('uniquify all kinds of PBX*BuildPhase')
         current_node = self.nodes[build_phase_hex]
-        # no useful key, use its isa value
-        cur_path_key = current_node['isa']
+        # no useful key in some build phase types, use its isa value
+        bp_type = current_node['isa']
+        if bp_type == 'PBXShellScriptBuildPhase':
+            cur_path_key = 'name'
+        else:
+            cur_path_key = bp_type
         self.__set_to_result(parent_hex, build_phase_hex, cur_path_key)
         self.vprint('uniquify PBXBuildFile')
         for build_file_hex in current_node['files']:
@@ -441,7 +445,7 @@ class XUniqueExit(SystemExit):
 
 def main(sys_args):
     usage = "usage: %prog [-v][-u][-s][-c][-p] path/to/Project.xcodeproj"
-    description = "By default, without any option, xUnique uniquify and sort the project file."
+    description = "When neither '-u' nor '-s' option exists, xUnique will invisibly add both '-u' and '-s' in arguments"
     parser = OptionParser(usage=usage, description=description)
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose", default=False,
