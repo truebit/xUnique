@@ -293,7 +293,7 @@ Please check:
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
         self.vprint('uniquify PBXProject')
-        self.vprint('uniquify PBXGroup and PBXFileRef')
+        self.vprint('uniquify PBX*Group and PBX*Reference*')
         self.__unique_group_or_ref(project_hex, self.main_group_hex)
         self.vprint('uniquify XCConfigurationList')
         bcl_hex = self.root_node['buildConfigurationList']
@@ -354,7 +354,7 @@ Please check:
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
         '''PBXContainerItemProxy'''
         self.vprint('uniquify PBXContainerItemProxy')
-        self.__set_to_result(parent_hex, container_item_proxy_hex, 'remoteInfo')
+        self.__set_to_result(parent_hex, container_item_proxy_hex, ('isa','remoteInfo'))
         cur_path = self.__result[container_item_proxy_hex]['path']
         current_node = self.nodes[container_item_proxy_hex]
         # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
