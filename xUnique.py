@@ -335,6 +335,7 @@ Please check:
         self.__unique_build_configuration_list(target_hex, bcl_hex)
         dependencies_list = current_node.get('dependencies')
         if dependencies_list:
+            self.vprint('uniquify PBXTargetDependency')
             for dependency_hex in dependencies_list:
                 self.__unique_target_dependency(target_hex, dependency_hex)
         build_phases_list = current_node['buildPhases']
@@ -343,8 +344,11 @@ Please check:
 
     def __unique_target_dependency(self, parent_hex, target_dependency_hex):
         '''PBXTargetDependency'''
-        target_hex = self.nodes[target_dependency_hex]['target']
-        self.__set_to_result(parent_hex, target_dependency_hex, self.__result[target_hex]['path'])
+        target_hex = self.nodes[target_dependency_hex].get('target')
+        if target_hex:
+            self.__set_to_result(parent_hex, target_dependency_hex, self.__result[target_hex]['path'])
+        else:
+            self.__set_to_result(parent_hex, target_dependency_hex, 'name')
         self.__unique_container_item_proxy(target_dependency_hex, self.nodes[target_dependency_hex]['targetProxy'])
 
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
