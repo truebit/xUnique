@@ -155,6 +155,7 @@ Please check:
     def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
         key_ptn = re_compile('(?<=\s)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
+        removed_line = []
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
@@ -166,9 +167,11 @@ Please check:
                 # remove line with non-existing element
                 if self.__result.get('to_be_removed') and any(
                         i for i in key_list if i in self.__result['to_be_removed']):
+                    removed_line.append(new_line)
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in key_list):
+                    removed_line.append(new_line)
                     continue
                 else:
                     for key in key_list:
@@ -185,6 +188,9 @@ Please check:
             unlink(tmp_path)
             self._is_modified = True
             success_print('Uniquify done')
+            if removed_line:
+                warning_print('Following lines were deleted because of invalid format or no longer being used:')
+                print(*removed_line, end='')
 
     def sort_pbxproj(self, sort_pbx_by_file_name = False):
         self.vprint('sort project.xpbproj file')
