@@ -396,20 +396,23 @@ Please check:
 
     def __unique_group_or_ref(self, parent_hex, group_ref_hex):
         '''PBXFileReference PBXGroup PBXVariantGroup PBXReferenceProxy'''
-        current_hex = group_ref_hex
-        if self.nodes[current_hex].get('name'):
-            cur_path_key = 'name'
-        elif self.nodes[current_hex].get('path'):
-            cur_path_key = 'path'
+        if self.nodes.get(group_ref_hex):
+            current_hex = group_ref_hex
+            if self.nodes[current_hex].get('name'):
+                cur_path_key = 'name'
+            elif self.nodes[current_hex].get('path'):
+                cur_path_key = 'path'
+            else:
+                # root PBXGroup has neither path nor name, give a new name 'PBXRootGroup'
+                cur_path_key = 'PBXRootGroup'
+            self.__set_to_result(parent_hex, current_hex, cur_path_key)
+            if self.nodes[current_hex].get('children'):
+                for child_hex in self.nodes[current_hex]['children']:
+                    self.__unique_group_or_ref(current_hex, child_hex)
+            if self.nodes[current_hex]['isa'] == 'PBXReferenceProxy':
+                self.__unique_container_item_proxy(parent_hex, self.nodes[current_hex]['remoteRef'])
         else:
-            # root PBXGroup has neither path nor name, give a new name 'PBXRootGroup'
-            cur_path_key = 'PBXRootGroup'
-        self.__set_to_result(parent_hex, current_hex, cur_path_key)
-        if self.nodes[current_hex].get('children'):
-            for child_hex in self.nodes[current_hex]['children']:
-                self.__unique_group_or_ref(current_hex, child_hex)
-        elif self.nodes[current_hex]['isa'] == 'PBXReferenceProxy':
-            self.__unique_container_item_proxy(parent_hex, self.nodes[current_hex]['remoteRef'])
+            self.__result.setdefault('to_be_removed', []).append(group_ref_hex)
 
     def __unique_build_file(self, parent_hex, build_file_hex):
         '''PBXBuildFile'''
