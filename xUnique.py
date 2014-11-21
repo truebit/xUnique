@@ -33,18 +33,20 @@ from optparse import OptionParser
 
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
-output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
+print_ng = lambda *args, **kwargs: print(*[unicode(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
+#output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
+output_u8line = lambda *args : print(*[unicode(i).encode('utf-8') for i in args],end='')
 def warning_print(*args, **kwargs):
     new_args = list(args)
     new_args[0] = '\x1B[33m{}'.format(new_args[0])
     new_args[-1] = '{}\x1B[0m'.format(new_args[-1])
-    print(*new_args, **kwargs)
+    print_ng(*new_args, **kwargs)
 
 def success_print(*args, **kwargs):
     new_args = list(args)
     new_args[0] = '\x1B[32m{}'.format(new_args[0])
     new_args[-1] = '{}\x1B[0m'.format(new_args[-1])
-    print(*new_args, **kwargs)
+    print_ng(*new_args, **kwargs)
 
 
 class XUnique(object):
@@ -155,7 +157,7 @@ Please check:
     def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
         key_ptn = re_compile('(?<=\s)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
-        removed_line = []
+        removed_lines = []
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = line.decode('utf-8')
@@ -167,11 +169,11 @@ Please check:
                 # remove line with non-existing element
                 if self.__result.get('to_be_removed') and any(
                         i for i in key_list if i in self.__result['to_be_removed']):
-                    removed_line.append(new_line)
+                    removed_lines.append(new_line)
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in key_list):
-                    removed_line.append(new_line)
+                    removed_lines.append(new_line)
                     continue
                 else:
                     for key in key_list:
@@ -188,13 +190,14 @@ Please check:
             unlink(tmp_path)
             self._is_modified = True
             success_print('Uniquify done')
-            if removed_line:
+            if removed_lines:
                 warning_print('Following lines were deleted because of invalid format or no longer being used:')
-                print(*removed_line, end='')
+                print_ng(*removed_lines, end='')
 
     def sort_pbxproj(self, sort_pbx_by_file_name = False):
         self.vprint('sort project.xpbproj file')
         lines = []
+        removed_lines=[]
         files_start_ptn = re_compile('^(\s*)files = \(\s*$')
         files_key_ptn = re_compile('((?<=[A-Z0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= in )')
         fc_end_ptn = '\);'
@@ -241,8 +244,11 @@ Please check:
                         lines = []
                     files_flag = False
                     fc_end_ptn = '\);'
-                elif files_key_ptn.search(line) and line not in lines:
-                    lines.append(line)
+                elif files_key_ptn.search(line):
+                    if line in lines:
+                        removed_lines.append(line)
+                    else:
+                        lines.append(line)
             # children search and sort
             children_match = children_start_ptn.search(line)
             if children_match:
@@ -260,8 +266,11 @@ Please check:
                         lines = []
                     child_flag = False
                     fc_end_ptn = '\);'
-                elif children_pbx_key_ptn.search(line) and line not in lines:
-                    lines.append(line)
+                elif children_pbx_key_ptn.search(line):
+                    if line in lines:
+                        removed_lines.append(line)
+                    else:
+                        lines.append(line)
             # PBX search and sort
             pbx_match = pbx_start_ptn.search(line)
             if pbx_match:
@@ -280,7 +289,10 @@ Please check:
                         lines = []
                     pbx_flag = False
                     pbx_end_ptn = ('^.*End ', ' section.*')
-                elif children_pbx_key_ptn.search(line) and line not in lines:
+                elif children_pbx_key_ptn.search(line):
+                    if line in lines:
+                        removed_lines.append(line)
+                    else:
                         lines.append(line)
             # normal output
             if not (files_flag or child_flag or pbx_flag):
@@ -295,6 +307,9 @@ Please check:
             unlink(tmp_path)
             self._is_modified = True
             success_print('Sort done')
+            if removed_lines:
+                warning_print('Following lines were deleted because of duplication:')
+                print_ng(*removed_lines, end='')
 
     def __unique_project(self, project_hex):
         '''PBXProject. It is root itself, no parents to it'''
@@ -459,16 +474,16 @@ def main(sys_args):
     xcode_proj_path = args[0].decode(sys_get_fs_encoding())
     xunique = XUnique(xcode_proj_path, options.verbose)
     if not (options.unique_bool or options.sort_bool):
-        print("Uniquify and Sort")
+        print_ng("Uniquify and Sort")
         xunique.unique_project()
         xunique.sort_pbxproj(options.sort_pbx_fn_bool)
         success_print("Uniquify and Sort done")
     else:
         if options.unique_bool:
-            print('Uniquify...')
+            print_ng('Uniquify...')
             xunique.unique_project()
         if options.sort_bool:
-            print('Sort...')
+            print_ng('Sort...')
             xunique.sort_pbxproj(options.sort_pbx_fn_bool)
     if options.combine_commit:
         if xunique.is_modified:
