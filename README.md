@@ -90,6 +90,7 @@ There are many ways to use this script. I will introduce two types:
     * `PBXCopyFilesBuildPhase`
     * `PBXHeadersBuildPhase`
     * `PBXShellScriptBuildPhase`
+    * `PBXBuildRule`
     * `PBXBuildFile`
     * `PBXReferenceProxy`
     * `PBXFileReference`
