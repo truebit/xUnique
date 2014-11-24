@@ -362,6 +362,10 @@ Please check:
         build_phases_list = current_node['buildPhases']
         for build_phase_hex in build_phases_list:
             self.__unique_build_phase(target_hex, build_phase_hex)
+        build_rules_list = current_node.get('buildRules')
+        if build_rules_list:
+            for build_rule_hex in build_rules_list:
+                self.__unique_build_rules(target_hex, build_rule_hex)
 
     def __unique_target_dependency(self, parent_hex, target_dependency_hex):
         '''PBXTargetDependency'''
@@ -444,6 +448,18 @@ Please check:
                     self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
                 else:
                     self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
+
+    def __unique_build_rules(self, parent_hex, build_rule_hex):
+        '''PBXBuildRule'''
+        current_node = self.nodes.get(build_rule_hex)
+        if not current_node:
+            self.__result.setdefault('to_be_removed', []).append(build_rule_hex)
+        else:
+            file_type = current_node['fileType']
+            cur_path_key = 'fileType'
+            if file_type == 'pattern.proxy':
+                cur_path_key = ('fileType','filePatterns')
+            self.__set_to_result(parent_hex,build_rule_hex,cur_path_key)
 
 class XUniqueExit(SystemExit):
     def __init__(self,value):
