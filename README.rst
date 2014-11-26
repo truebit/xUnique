@@ -38,7 +38,7 @@ What it does & How it works
       with some differences in ordering ``PBXFileReference`` and
       ``PBXBuildFile``
 
-#. With different `options <#supported-argument-options>`__, you can use
+#. With different `options <https://github.com/truebit/xUnique#supported-argument-options>`__, you can use
    *xUnique* with more flexibility
 
 Change Log
@@ -89,14 +89,14 @@ Xcode "build post-action" (Recommended)
 #.  Next time when you Build or Run the project, xUnique would be
     triggered after build success. If the build works, you could commit
     all files.
-#. Demo gif animation is `here <#add-xunique-to-xcode-post-action>`__
+#. Demo gif animation is `here <https://github.com/truebit/xUnique#add-xunique-to-xcode-post-action>`__
 
 Git hook
 ~~~~~~~~
 
 #. create a git hook in Terminal like: 
    
- .. code-block:: bash
+.. code-block:: bash
 
    $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
 
@@ -116,7 +116,7 @@ Supported argument options
 
 Use options in xUnique:
 
-  .. code-block:: bash
+.. code-block:: bash
 
     $ python2 -mxUnique [options] "path_to/YourProject.xcodeproj/or_project.pbxproj"
 
