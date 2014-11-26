@@ -96,9 +96,9 @@ Git hook
 
 #. create a git hook in Terminal like: 
    
-.. code-block:: bash
+   .. code-block:: bash
 
-   $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
+     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
 
 #. Add permission ``chmod 755 .git/hooks/pre-commit``
 #. xUnique will be triggered when you trying to commit:
@@ -136,7 +136,7 @@ Examples
 -  The diff result with my modified `sort-Xcode-project-file <https://github.com/truebit/webkit/blob/7afa105d20fccdec68d8bd778b649409f17cbdc0/Tools/Scripts/sort-Xcode-project-file>`__ with ``PBXBuildFile`` and ``PBXFileReference`` sort support could be found `here <https://github.com/truebit/APNS-Pusher/commit/d5ff3dc053c4be96d6c209cc9ced890faad263c9>`__.
 -  Pure python sort result could be found `here <https://github.com/truebit/APNS-Pusher/commit/f79d182b0b5892cbb889b67242845807689bd5e4>`__
 -  PBX sections sorted by MD5 digest result (default in v4.0.0) could be
-   found `here <https://github.com/truebit/APNS-Pusher/commit/5171c08d601500f6d9bda24cbd640074e1e2b3d7>`__
+   found `below <https://github.com/truebit/APNS-Pusher/commit/5171c08d601500f6d9bda24cbd640074e1e2b3d7>`__
 
 add xUnique to Xcode post action
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
