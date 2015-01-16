@@ -173,6 +173,7 @@ Please check:
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in key_list):
+                    self.vprint("Some node(s) are not in generated result, remove this line :",key_list)
                     removed_lines.append(new_line)
                     continue
                 else:
@@ -431,6 +432,7 @@ Please check:
             if self.nodes[current_hex]['isa'] == 'PBXReferenceProxy':
                 self.__unique_container_item_proxy(parent_hex, self.nodes[current_hex]['remoteRef'])
         else:
+            self.vprint("Group/FileReference/ReferenceProxy '", group_ref_hex, "' not found, it will be removed.")
             self.__result.setdefault('to_be_removed', []).append(group_ref_hex)
 
     def __unique_build_file(self, parent_hex, build_file_hex):
@@ -441,18 +443,21 @@ Please check:
         else:
             file_ref_hex = current_node.get('fileRef')
             if not file_ref_hex:
+                self.vprint("PBXFileReference '", file_ref_hex, "' not found, it will be removed.")
                 self.__result.setdefault('to_be_removed', []).append(build_file_hex)
             else:
                 if self.__result.get(file_ref_hex):
                     cur_path_key = self.__result[file_ref_hex]['path']
                     self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
                 else:
+                    self.vprint("PBXFileReference '", file_ref_hex, "' not found, it will be removed with its PBXBuildFile :", build_file_hex,sep='')
                     self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
     def __unique_build_rules(self, parent_hex, build_rule_hex):
         '''PBXBuildRule'''
         current_node = self.nodes.get(build_rule_hex)
         if not current_node:
+            self.vprint("PBXBuildRule '", current_node, "' not found, it will be removed.")
             self.__result.setdefault('to_be_removed', []).append(build_rule_hex)
         else:
             file_type = current_node['fileType']
