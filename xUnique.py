@@ -99,6 +99,7 @@ Please check:
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
+        isa_type = current_node['isa']
         if isinstance(current_path_key, (list, tuple)):
             current_path = '/'.join([current_node[i] for i in current_path_key])
         elif isinstance(current_path_key, (basestring, unicode)):
@@ -110,9 +111,9 @@ Please check:
             raise KeyError('current_path_key must be list/tuple/string')
         cur_abs_path = '{}/{}'.format(self.__result[parent_hex]['path'], current_path)
         self.__result.update({
-            current_hex: {'path': cur_abs_path,
+            current_hex: {'path': '{}[{}]'.format(isa_type, cur_abs_path),
                           'new_key': md5_hex(cur_abs_path),
-                          'type': self.nodes[current_hex]['isa']
+                          'type': isa_type
             }
         })
 
@@ -450,7 +451,7 @@ Please check:
                     cur_path_key = self.__result[file_ref_hex]['path']
                     self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
                 else:
-                    self.vprint("PBXFileReference '", file_ref_hex, "' not found, it will be removed with its PBXBuildFile :", build_file_hex,sep='')
+                    self.vprint("PBXFileReference '", file_ref_hex, "' not found inPBXBuildFile :", build_file_hex,'. To be removed.',sep='')
                     self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
     def __unique_build_rules(self, parent_hex, build_rule_hex):
