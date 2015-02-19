@@ -101,7 +101,7 @@ Please check:
         current_node = self.nodes[current_hex]
         isa_type = current_node['isa']
         if isinstance(current_path_key, (list, tuple)):
-            current_path = '/'.join([current_node[i] for i in current_path_key])
+            current_path = '/'.join([str(current_node[i]) for i in current_path_key])
         elif isinstance(current_path_key, (basestring, unicode)):
             if current_path_key in current_node.keys():
                 current_path = current_node[current_path_key]
@@ -407,7 +407,11 @@ Please check:
         # no useful key in some build phase types, use its isa value
         bp_type = current_node['isa']
         if bp_type == 'PBXShellScriptBuildPhase':
-            cur_path_key = 'name'
+            cur_path_key = 'shellScript'
+        elif bp_type =='PBXCopyFilesBuildPhase':
+            cur_path_key = ['name','dstSubfolderSpec','dstPath']
+            if not current_node.get('name'):
+                del cur_path_key[0]
         else:
             cur_path_key = bp_type
         self.__set_to_result(parent_hex, build_phase_hex, cur_path_key)
