@@ -30,7 +30,7 @@ readme_path = path.join(here, 'README.rst')
 with copen(readme_path, encoding='utf-8') as f:
     long_description = f.read()
 
-__version__ = '4.1.0'
+__version__ = '4.1.1'
 
 setup(
     name="xUnique",
