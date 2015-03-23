@@ -111,6 +111,23 @@ Git hook
       xUnique. So do not push the commit unless you add the modified
       project file again and do another commit.
 
+CocoaPods users
+~~~~~~~~~~~~~~~
+
+If your project uses CocoaPods AND added ``Pods`` directory to source control, you may also need to uniquify ``Pods.xcodeproj``: 
+
+-  Xcode "build post-action" : add extra command below
+        
+   .. code-block:: bash
+
+     $ python2 -mxUnique "${PODS_ROOT}/Pods.xcodeproj"
+
+-  Git hook: add one more command in hook script
+
+   .. code-block:: bash
+
+     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; echo 'python2 -mxUnique path/to/Pods.xcodeproj' } > .git/hooks/pre-commit
+
 Supported argument options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
