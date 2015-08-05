@@ -126,7 +126,7 @@ If your project uses CocoaPods AND added ``Pods`` directory to source control, y
 
    .. code-block:: bash
 
-     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; echo 'python2 -mxUnique path/to/Pods.xcodeproj' } > .git/hooks/pre-commit
+     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; echo 'python2 -mxUnique path/to/Pods.xcodeproj'; } > .git/hooks/pre-commit
 
 Supported argument options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
