@@ -31,16 +31,18 @@ from collections import deque
 from filecmp import cmp as filecmp_cmp
 from optparse import OptionParser
 
-
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 print_ng = lambda *args, **kwargs: print(*[unicode(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
-#output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
-output_u8line = lambda *args : print(*[unicode(i).encode('utf-8') for i in args],end='')
+# output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
+output_u8line = lambda *args: print(*[unicode(i).encode('utf-8') for i in args], end='')
+
+
 def warning_print(*args, **kwargs):
     new_args = list(args)
     new_args[0] = '\x1B[33m{}'.format(new_args[0])
     new_args[-1] = '{}\x1B[0m'.format(new_args[-1])
     print_ng(*new_args, **kwargs)
+
 
 def success_print(*args, **kwargs):
     new_args = list(args)
@@ -78,7 +80,7 @@ class XUnique(object):
                 self.root_hex: {'path': self.proj_root,
                                 'new_key': md5_hex(self.proj_root),
                                 'type': self.root_node['isa']
-                }
+                                }
             })
         self._is_modified = False
 
@@ -95,7 +97,8 @@ class XUnique(object):
             raise XUniqueExit("""{}
 Please check:
 1. You have installed Xcode Command Line Tools and command 'plutil' could be found in $PATH;
-2. The project file is not broken, such like merge conflicts, incomplete content due to xUnique failure. """.format(cpe.output))
+2. The project file is not broken, such like merge conflicts, incomplete content due to xUnique failure. """.format(
+                cpe.output))
 
     def __set_to_result(self, parent_hex, current_hex, current_path_key):
         current_node = self.nodes[current_hex]
@@ -114,11 +117,11 @@ Please check:
             current_hex: {'path': '{}[{}]'.format(isa_type, cur_abs_path),
                           'new_key': md5_hex(cur_abs_path),
                           'type': isa_type
-            }
+                          }
         })
 
     def get_proj_root(self):
-        '''PBXProject name,the root node'''
+        """PBXProject name,the root node"""
         pbxproject_ptn = re_compile('(?<=PBXProject ").*(?=")')
         with open(self.xcode_pbxproj_path) as pbxproj_file:
             for line in pbxproj_file:
@@ -154,7 +157,6 @@ Please check:
             warning_print("Debug result json file has been written to '", debug_result_file_path, sep='')
         self.substitute_old_keys()
 
-
     def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
         key_ptn = re_compile('(?<=\s)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
@@ -174,7 +176,7 @@ Please check:
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in key_list):
-                    self.vprint("Some node(s) are not in generated result, remove this line :",key_list)
+                    self.vprint("Some node(s) are not in generated result, remove this line :", key_list)
                     removed_lines.append(new_line)
                     continue
                 else:
@@ -196,10 +198,10 @@ Please check:
                 warning_print('Following lines were deleted because of invalid format or no longer being used:')
                 print_ng(*removed_lines, end='')
 
-    def sort_pbxproj(self, sort_pbx_by_file_name = False):
+    def sort_pbxproj(self, sort_pbx_by_file_name=False):
         self.vprint('sort project.xpbproj file')
         lines = []
-        removed_lines=[]
+        removed_lines = []
         files_start_ptn = re_compile('^(\s*)files = \(\s*$')
         files_key_ptn = re_compile('((?<=[A-Z0-9]{24} \/\* )|(?<=[A-F0-9]{32} \/\* )).+?(?= in )')
         fc_end_ptn = '\);'
@@ -314,7 +316,7 @@ Please check:
                 print_ng(*removed_lines, end='')
 
     def __unique_project(self, project_hex):
-        '''PBXProject. It is root itself, no parents to it'''
+        """PBXProject. It is root itself, no parents to it"""
         self.vprint('uniquify PBXProject')
         self.vprint('uniquify PBX*Group and PBX*Reference*')
         self.__unique_group_or_ref(project_hex, self.main_group_hex)
@@ -337,7 +339,7 @@ Please check:
             self.__unique_target(target_hex)
 
     def __unique_build_configuration_list(self, parent_hex, build_configuration_list_hex):
-        '''XCConfigurationList'''
+        """XCConfigurationList"""
         cur_path_key = 'defaultConfigurationName'
         self.__set_to_result(parent_hex, build_configuration_list_hex, cur_path_key)
         build_configuration_list_node = self.nodes[build_configuration_list_hex]
@@ -346,12 +348,12 @@ Please check:
             self.__unique_build_configuration(build_configuration_list_hex, build_configuration_hex)
 
     def __unique_build_configuration(self, parent_hex, build_configuration_hex):
-        '''XCBuildConfiguration'''
+        """XCBuildConfiguration"""
         cur_path_key = 'name'
         self.__set_to_result(parent_hex, build_configuration_hex, cur_path_key)
 
     def __unique_target(self, target_hex):
-        '''PBXNativeTarget PBXAggregateTarget'''
+        """PBXNativeTarget PBXAggregateTarget"""
         self.vprint('uniquify PBX*Target')
         current_node = self.nodes[target_hex]
         bcl_hex = current_node['buildConfigurationList']
@@ -370,7 +372,7 @@ Please check:
                 self.__unique_build_rules(target_hex, build_rule_hex)
 
     def __unique_target_dependency(self, parent_hex, target_dependency_hex):
-        '''PBXTargetDependency'''
+        """PBXTargetDependency"""
         target_hex = self.nodes[target_dependency_hex].get('target')
         if target_hex:
             self.__set_to_result(parent_hex, target_dependency_hex, self.__result[target_hex]['path'])
@@ -379,9 +381,9 @@ Please check:
         self.__unique_container_item_proxy(target_dependency_hex, self.nodes[target_dependency_hex]['targetProxy'])
 
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
-        '''PBXContainerItemProxy'''
+        """PBXContainerItemProxy"""
         self.vprint('uniquify PBXContainerItemProxy')
-        self.__set_to_result(parent_hex, container_item_proxy_hex, ('isa','remoteInfo'))
+        self.__set_to_result(parent_hex, container_item_proxy_hex, ('isa', 'remoteInfo'))
         cur_path = self.__result[container_item_proxy_hex]['path']
         current_node = self.nodes[container_item_proxy_hex]
         # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
@@ -395,21 +397,21 @@ Please check:
                                        'new_key': md5_hex(new_rg_id_path),
                                        'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
                                                               'remoteGlobalIDString')
-                }
+                                       }
             })
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
-        '''PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase
+        """PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase
         PBXCopyFilesBuildPhase PBXHeadersBuildPhase PBXShellScriptBuildPhase
-        '''
+        """
         self.vprint('uniquify all kinds of PBX*BuildPhase')
         current_node = self.nodes[build_phase_hex]
         # no useful key in some build phase types, use its isa value
         bp_type = current_node['isa']
         if bp_type == 'PBXShellScriptBuildPhase':
             cur_path_key = 'shellScript'
-        elif bp_type =='PBXCopyFilesBuildPhase':
-            cur_path_key = ['name','dstSubfolderSpec','dstPath']
+        elif bp_type == 'PBXCopyFilesBuildPhase':
+            cur_path_key = ['name', 'dstSubfolderSpec', 'dstPath']
             if not current_node.get('name'):
                 del cur_path_key[0]
         else:
@@ -420,7 +422,7 @@ Please check:
             self.__unique_build_file(build_phase_hex, build_file_hex)
 
     def __unique_group_or_ref(self, parent_hex, group_ref_hex):
-        '''PBXFileReference PBXGroup PBXVariantGroup PBXReferenceProxy'''
+        """PBXFileReference PBXGroup PBXVariantGroup PBXReferenceProxy"""
         if self.nodes.get(group_ref_hex):
             current_hex = group_ref_hex
             if self.nodes[current_hex].get('name'):
@@ -441,7 +443,7 @@ Please check:
             self.__result.setdefault('to_be_removed', []).append(group_ref_hex)
 
     def __unique_build_file(self, parent_hex, build_file_hex):
-        '''PBXBuildFile'''
+        """PBXBuildFile"""
         current_node = self.nodes.get(build_file_hex)
         if not current_node:
             self.__result.setdefault('to_be_removed', []).append(build_file_hex)
@@ -455,11 +457,12 @@ Please check:
                     cur_path_key = self.__result[file_ref_hex]['path']
                     self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
                 else:
-                    self.vprint("PBXFileReference '", file_ref_hex, "' not found inPBXBuildFile :", build_file_hex,'. To be removed.',sep='')
+                    self.vprint("PBXFileReference '", file_ref_hex, "' not found inPBXBuildFile :", build_file_hex,
+                                '. To be removed.', sep='')
                     self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
     def __unique_build_rules(self, parent_hex, build_rule_hex):
-        '''PBXBuildRule'''
+        """PBXBuildRule"""
         current_node = self.nodes.get(build_rule_hex)
         if not current_node:
             self.vprint("PBXBuildRule '", current_node, "' not found, it will be removed.")
@@ -468,11 +471,12 @@ Please check:
             file_type = current_node['fileType']
             cur_path_key = 'fileType'
             if file_type == 'pattern.proxy':
-                cur_path_key = ('fileType','filePatterns')
-            self.__set_to_result(parent_hex,build_rule_hex,cur_path_key)
+                cur_path_key = ('fileType', 'filePatterns')
+            self.__set_to_result(parent_hex, build_rule_hex, cur_path_key)
+
 
 class XUniqueExit(SystemExit):
-    def __init__(self,value):
+    def __init__(self, value):
         value = "\x1B[31m{}\x1B[0m".format(value)
         super(XUniqueExit, self).__init__(value)
 
@@ -520,6 +524,7 @@ def main(sys_args):
 
 def cli():
     main(sys_argv)
+
 
 if __name__ == '__main__':
     cli()
