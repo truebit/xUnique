@@ -67,18 +67,18 @@ Installation
 How to use
 ----------
 
-There are many ways to use this script after you installed *xUnqiue* . I will introduce two:
+There are many ways to use this script after you installed *xUnique* . I will introduce two:
 
 Xcode "build post-action" (Recommended)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #.  open ``Edit Scheme`` in Xcode (shortcut:
     ``⌘``\ +\ ``Shift``\ +\ ``,``)
-#.  choose the sheme you use to run your project
+#.  choose the scheme you use to run your project
 #.  expand ``Build``, select ``Post-actions``
 #.  click symbol ``+`` on the left bottom corner of the right pane
 #.  choose ``New Run Script Action``
-#.  choose your selected sheme name in ``Provide build settings from``
+#.  choose your selected scheme name in ``Provide build settings from``
 #.  input commands below:
     
     .. code-block:: bash
@@ -139,7 +139,7 @@ Use options in xUnique:
 
 -v    print verbose output, and generate ``debug_result.json`` file for debug.
 -u    uniquify project file, that is, replace UUID to MD5 digest.
--s    sort project file inlcuding ``children``, ``files``, ``PBXFileReference`` and ``PBXBuildFile`` list and remove all duplicated entries in these lists. Supports both original and uniquified project file.
+-s    sort project file including ``children``, ``files``, ``PBXFileReference`` and ``PBXBuildFile`` list and remove all duplicated entries in these lists. Supports both original and uniquified project file.
 -p    sort ``PBXFileReference`` and ``PBXBuildFile`` sections in project file ordered by file names. Only works with ``-s``. Before v4.0.0, this was hard-coded in ``-s`` option and cannot be turned off. Starting from v4.0.0, without this option along with ``-s``, xUnique will sort these two types by MD5 digests, the same as Xcode does.
 -c    When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.
 
@@ -197,7 +197,7 @@ Authors
 Contributions
 -------------
 
--  I only tested on several single projects and serveral projects with a
+-  I only tested on several single projects and several projects with a
    subproject, so maybe there should be more unconsidered conditions. If
    you get any problem, feel free to fire a Pull Request or Issue
 
