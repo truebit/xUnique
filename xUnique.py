@@ -518,6 +518,8 @@ def main(sys_args):
         if xunique.is_modified:
             warning_print("File 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.")
 
+def cli():
+    main(sys_argv)
 
 if __name__ == '__main__':
-    main(sys_argv)
+    cli()
