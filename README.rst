@@ -64,6 +64,13 @@ Installation
 
       $ python setup.py install
 
+It will install a command line script ``xunique`` in your PATH. So you can invoke xUnique directly from command line:
+
+.. code-block:: bash
+
+    $ xunique -h
+
+
 How to use
 ----------
 
@@ -83,7 +90,7 @@ Xcode "build post-action" (Recommended)
     
     .. code-block:: bash
 
-      $ python2 -mxUnique "${PROJECT_FILE_PATH}/project.pbxproj"
+      $ xunique "${PROJECT_FILE_PATH}/project.pbxproj"
 
 #.  click ``Close`` and it's all done.
 #.  Next time when you Build or Run the project, xUnique would be
@@ -98,7 +105,7 @@ Git hook
    
    .. code-block:: bash
 
-     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
+     $ { echo '#!/bin/sh'; echo 'xunique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
 
 #. Add permission ``chmod 755 .git/hooks/pre-commit``
 #. xUnique will be triggered when you trying to commit:
@@ -120,13 +127,13 @@ If your project uses CocoaPods AND added ``Pods`` directory to source control, y
         
    .. code-block:: bash
 
-     $ python2 -mxUnique "${PODS_ROOT}/Pods.xcodeproj"
+     $ xunique "${PODS_ROOT}/Pods.xcodeproj"
 
 -  Git hook: add one more command in hook script
 
    .. code-block:: bash
 
-     $ { echo '#!/bin/sh'; echo 'python2 -mxUnique path/to/MyProject.xcodeproj'; echo 'python2 -mxUnique path/to/Pods.xcodeproj'; } > .git/hooks/pre-commit
+     $ { echo '#!/bin/sh'; echo 'xunique path/to/MyProject.xcodeproj'; echo 'xunique path/to/Pods.xcodeproj'; } > .git/hooks/pre-commit
 
 Supported argument options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -135,7 +142,7 @@ Use options in xUnique:
 
 .. code-block:: bash
 
-    $ python2 -mxUnique [options] "path_to/YourProject.xcodeproj/or_project.pbxproj"
+    $ xunique [options] "path_to/YourProject.xcodeproj/or_project.pbxproj"
 
 -v    print verbose output, and generate ``debug_result.json`` file for debug.
 -u    uniquify project file, that is, replace UUID to MD5 digest.
