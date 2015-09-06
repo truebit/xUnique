@@ -477,7 +477,7 @@ class XUniqueExit(SystemExit):
         super(XUniqueExit, self).__init__(value)
 
 
-def main(sys_args):
+def main():
     usage = "usage: %prog [-v][-u][-s][-c][-p] path/to/Project.xcodeproj"
     description = "When neither '-u' nor '-s' option exists, xUnique will invisibly add both '-u' and '-s' in arguments"
     parser = OptionParser(usage=usage, description=description)
@@ -492,7 +492,7 @@ def main(sys_args):
                       help="When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.")
     parser.add_option("-p", "--sort-pbx-by-filename", action="store_true", dest="sort_pbx_fn_bool", default=False,
                       help="sort PBXFileReference and PBXBuildFile sections in project file, ordered by file name. Without this option, ordered by MD5 digest, the same as Xcode does.")
-    (options, args) = parser.parse_args(sys_args[1:])
+    (options, args) = parser.parse_args(sys_argv[1:])
     if len(args) < 1:
         parser.print_help()
         raise XUniqueExit(
@@ -520,4 +520,4 @@ def main(sys_args):
 
 
 if __name__ == '__main__':
-    main(sys_argv)
+    main()
