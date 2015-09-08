@@ -483,7 +483,7 @@ class XUniqueExit(SystemExit):
 
 def main():
     usage = "usage: %prog [-v][-u][-s][-c][-p] path/to/Project.xcodeproj"
-    description = "When neither '-u' nor '-s' option exists, xUnique will invisibly add both '-u' and '-s' in arguments"
+    description = "Doc: https://github.com/truebit/xUnique"
     parser = OptionParser(usage=usage, description=description)
     parser.add_option("-v", "--verbose",
                       action="store_true", dest="verbose", default=False,
@@ -491,7 +491,7 @@ def main():
     parser.add_option("-u", "--unique", action="store_true", dest="unique_bool", default=False,
                       help="uniquify the project file. default is False.")
     parser.add_option("-s", "--sort", action="store_true", dest="sort_bool", default=False,
-                      help="sort the project file. default is False.")
+                      help="sort the project file. default is False. When neither '-u' nor '-s' option exists, xUnique will invisibly add both '-u' and '-s' in arguments")
     parser.add_option("-c", "--combine-commit", action="store_true", dest="combine_commit", default=False,
                       help="When project file was modified, xUnique quit with non-zero status. Without this option, the status code would be zero if so. This option is usually used in Git hook to submit xUnique result combined with your original new commit.")
     parser.add_option("-p", "--sort-pbx-by-filename", action="store_true", dest="sort_pbx_fn_bool", default=False,
