@@ -64,7 +64,7 @@ Installation
 
       $ python setup.py install
 
-It will install a command line script ``xunique`` in your PATH. So you can invoke xUnique directly from command line:
+It will install a command line script ``xunique`` in dir ``/usr/local/bin``(make sure you have added this dir to your ``$PATH``). So you can invoke xUnique directly from command line:
 
 .. code-block:: bash
 
