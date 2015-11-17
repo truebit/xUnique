@@ -33,7 +33,6 @@ from optparse import OptionParser
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 print_ng = lambda *args, **kwargs: print(*[unicode(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
-# output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
 output_u8line = lambda *args: print(*[unicode(i).encode('utf-8') for i in args], end='')
 
 
@@ -113,12 +112,14 @@ Please check:
         else:
             raise KeyError('current_path_key must be list/tuple/string')
         cur_abs_path = '{}/{}'.format(self.__result[parent_hex]['path'], current_path)
+        new_key = md5_hex(cur_abs_path)
         self.__result.update({
             current_hex: {'path': '{}[{}]'.format(isa_type, cur_abs_path),
-                          'new_key': md5_hex(cur_abs_path),
+                          'new_key': new_key,
                           'type': isa_type
                           }
         })
+        return new_key
 
     def get_proj_root(self):
         """PBXProject name,the root node"""
@@ -194,6 +195,7 @@ Please check:
             self._is_modified = True
             success_print('Uniquify done')
             if removed_lines:
+                warning_print(*self.__result['uniquify_warning'])
                 warning_print('Following lines were deleted because of invalid format or no longer being used:')
                 print_ng(*removed_lines, end='')
 
@@ -382,22 +384,28 @@ Please check:
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
         """PBXContainerItemProxy"""
         self.vprint('uniquify PBXContainerItemProxy')
-        self.__set_to_result(parent_hex, container_item_proxy_hex, ('isa', 'remoteInfo'))
+        new_container_item_proxy_hex = self.__set_to_result(parent_hex, container_item_proxy_hex, ('isa', 'remoteInfo'))
         cur_path = self.__result[container_item_proxy_hex]['path']
         current_node = self.nodes[container_item_proxy_hex]
         # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
-        remote_global_id_hex = current_node['remoteGlobalIDString']
-        if remote_global_id_hex not in self.__result.keys():
+        remote_global_id_hex = current_node.get('remoteGlobalIDString')
+        if remote_global_id_hex and remote_global_id_hex not in self.__result.keys():
             portal_hex = current_node['containerPortal']
-            portal_path = self.__result[portal_hex]['path']
-            new_rg_id_path = '{}+{}'.format(cur_path, portal_path)
-            self.__result.update({
-                remote_global_id_hex: {'path': new_rg_id_path,
-                                       'new_key': md5_hex(new_rg_id_path),
-                                       'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
-                                                              'remoteGlobalIDString')
-                                       }
-            })
+            portal_result_hex = self.__result.get(portal_hex)
+            if not portal_result_hex:
+                self.__result.setdefault('uniquify_warning', []).append(
+                    "PBXTargetDependency '{}' and its child PBXContainerItemProxy '{}' are not needed anymore, please remove their sections manually".format(
+                        self.__result[parent_hex]['new_key'], new_container_item_proxy_hex))
+            else:
+                portal_path = portal_result_hex['path']
+                new_rg_id_path = '{}+{}'.format(cur_path, portal_path)
+                self.__result.update({
+                    remote_global_id_hex: {'path': new_rg_id_path,
+                                           'new_key': md5_hex(new_rg_id_path),
+                                           'type': '{}#{}'.format(self.nodes[container_item_proxy_hex]['isa'],
+                                                                  'remoteGlobalIDString')
+                                           }
+                })
 
     def __unique_build_phase(self, parent_hex, build_phase_hex):
         """PBXSourcesBuildPhase PBXFrameworksBuildPhase PBXResourcesBuildPhase
@@ -456,8 +464,8 @@ Please check:
                     cur_path_key = self.__result[file_ref_hex]['path']
                     self.__set_to_result(parent_hex, build_file_hex, cur_path_key)
                 else:
-                    self.vprint("PBXFileReference '", file_ref_hex, "' not found inPBXBuildFile :", build_file_hex,
-                                '. To be removed.', sep='')
+                    self.vprint("PBXFileReference '", file_ref_hex, "' not found in PBXBuildFile '", build_file_hex,
+                                "'. To be removed.", sep='')
                     self.__result.setdefault('to_be_removed', []).extend((build_file_hex, file_ref_hex))
 
     def __unique_build_rules(self, parent_hex, build_rule_hex):
@@ -519,7 +527,8 @@ def main():
             raise XUniqueExit("File 'project.pbxproj' was modified, please add it and then commit.")
     else:
         if xunique.is_modified:
-            warning_print("File 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.")
+            warning_print(
+                "File 'project.pbxproj' was modified, please add it and commit again to submit xUnique result.\nNOTICE: If you want to submit xUnique result combined with original commit, use option '-c' in command.")
 
 
 if __name__ == '__main__':
