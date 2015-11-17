@@ -176,7 +176,6 @@ Please check:
                     continue
                 # remove incorrect entry that somehow does not exist in project node tree
                 elif not all(self.__result.get(uuid) for uuid in key_list):
-                    self.vprint("Some node(s) are not in generated result, remove this line :", key_list)
                     removed_lines.append(new_line)
                     continue
                 else:
