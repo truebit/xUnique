@@ -194,8 +194,9 @@ Please check:
             unlink(tmp_path)
             self._is_modified = True
             success_print('Uniquify done')
-            if removed_lines:
+            if self.__result.get('uniquify_warning'):
                 warning_print(*self.__result['uniquify_warning'])
+            if removed_lines:
                 warning_print('Following lines were deleted because of invalid format or no longer being used:')
                 print_ng(*removed_lines, end='')
 
@@ -389,7 +390,11 @@ Please check:
         current_node = self.nodes[container_item_proxy_hex]
         # re-calculate remoteGlobalIDString to a new length 32 MD5 digest
         remote_global_id_hex = current_node.get('remoteGlobalIDString')
-        if remote_global_id_hex and remote_global_id_hex not in self.__result.keys():
+        if not remote_global_id_hex:
+            self.__result.setdefault('uniquify_warning', []).append(
+                "PBXTargetDependency '{}' and its child PBXContainerItemProxy '{}' are not needed anymore, please remove their sections manually".format(
+                    self.__result[parent_hex]['new_key'], new_container_item_proxy_hex))
+        elif remote_global_id_hex not in self.__result.keys():
             portal_hex = current_node['containerPortal']
             portal_result_hex = self.__result.get(portal_hex)
             if not portal_result_hex:
