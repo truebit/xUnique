@@ -35,7 +35,6 @@ import six
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
 if six.PY2:
     print_ng = lambda *args, **kwargs: print(*[six.text_type(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
-    # output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
     output_u8line = lambda *args: print(*[six.text_type(i).encode('utf-8') for i in args], end='')
 elif six.PY3:
     print_ng = lambda *args, **kwargs: print(*args, **kwargs)
