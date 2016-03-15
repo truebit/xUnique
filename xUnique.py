@@ -30,10 +30,22 @@ from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding)
 from collections import deque
 from filecmp import cmp as filecmp_cmp
 from optparse import OptionParser
+import six
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
-print_ng = lambda *args, **kwargs: print(*[unicode(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
-output_u8line = lambda *args: print(*[unicode(i).encode('utf-8') for i in args], end='')
+if six.PY2:
+    print_ng = lambda *args, **kwargs: print(*[six.text_type(i).encode(sys_get_fs_encoding()) for i in args], **kwargs)
+    # output_u8line = lambda a_unicode: print(a_unicode.encode('utf-8'), end='')
+    output_u8line = lambda *args: print(*[six.text_type(i).encode('utf-8') for i in args], end='')
+elif six.PY3:
+    print_ng = lambda *args, **kwargs: print(*args, **kwargs)
+    output_u8line = lambda *args: print(*args, end='')
+
+
+def decoded_string(string, encoding=None):
+    if isinstance(string, six.text_type):
+        return string
+    return string.decode(encoding or sys_get_fs_encoding())
 
 
 def warning_print(*args, **kwargs):
@@ -90,7 +102,7 @@ class XUnique(object):
     def pbxproj_to_json(self):
         pbproj_to_json_cmd = ['plutil', '-convert', 'json', '-o', '-', self.xcode_pbxproj_path]
         try:
-            json_unicode_str = sp_co(pbproj_to_json_cmd).decode(sys_get_fs_encoding())
+            json_unicode_str = decoded_string(sp_co(pbproj_to_json_cmd))
             return json_loads(json_unicode_str)
         except CalledProcessError as cpe:
             raise XUniqueExit("""{}
@@ -104,7 +116,7 @@ Please check:
         isa_type = current_node['isa']
         if isinstance(current_path_key, (list, tuple)):
             current_path = '/'.join([str(current_node[i]) for i in current_path_key])
-        elif isinstance(current_path_key, (basestring, unicode)):
+        elif isinstance(current_path_key, six.string_types):
             if current_path_key in current_node.keys():
                 current_path = current_node[current_path_key]
             else:
@@ -127,7 +139,7 @@ Please check:
         with open(self.xcode_pbxproj_path) as pbxproj_file:
             for line in pbxproj_file:
                 # project.pbxproj is an utf-8 encoded file
-                line = line.decode('utf-8')
+                line = decoded_string(line, 'utf-8')
                 result = pbxproject_ptn.search(line)
                 if result:
                     # Backward compatibility using suffix
@@ -164,7 +176,7 @@ Please check:
         removed_lines = []
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
-            line = line.decode('utf-8')
+            line = decoded_string(line, 'utf-8')
             key_list = key_ptn.findall(line)
             if not key_list:
                 output_u8line(line)
@@ -217,21 +229,12 @@ Please check:
         pbx_flag = False
         last_two = deque([])
 
-        def file_dir_cmp(x, y):
-            if '.' in x:
-                if '.' in y:
-                    return cmp(x, y)
-                else:
-                    return 1
-            else:
-                if '.' in y:
-                    return -1
-                else:
-                    return cmp(x, y)
+        def file_dir_order(x):
+            return ('.' in x, x)
 
         for line in fi_input(self.xcode_pbxproj_path, backup='.sbak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
-            line = line.decode('utf-8')
+            line = decoded_string(line, 'utf-8')
             last_two.append(line)
             if len(last_two) > 2:
                 last_two.popleft()
@@ -240,7 +243,7 @@ Please check:
             if files_match:
                 output_u8line(line)
                 files_flag = True
-                if isinstance(fc_end_ptn, unicode):
+                if isinstance(fc_end_ptn, six.text_type):
                     fc_end_ptn = re_compile(files_match.group(1) + fc_end_ptn)
             if files_flag:
                 if fc_end_ptn.search(line):
@@ -260,14 +263,13 @@ Please check:
             if children_match:
                 output_u8line(line)
                 child_flag = True
-                if isinstance(fc_end_ptn, unicode):
+                if isinstance(fc_end_ptn, six.text_type):
                     fc_end_ptn = re_compile(children_match.group(1) + fc_end_ptn)
             if child_flag:
                 if fc_end_ptn.search(line):
                     if lines:
                         if self.main_group_hex not in last_two[0]:
-                            lines.sort(key=lambda file_str: children_pbx_key_ptn.search(file_str).group(),
-                                       cmp=file_dir_cmp)
+                            lines.sort(key=lambda file_str: (children_pbx_key_ptn.search(file_str).group(), file_dir_order))
                         output_u8line(''.join(lines))
                         lines = []
                     child_flag = False
@@ -513,7 +515,7 @@ def main():
         parser.print_help()
         raise XUniqueExit(
             "xUnique requires at least one positional argument: relative/absolute path to xcodeproj.")
-    xcode_proj_path = args[0].decode(sys_get_fs_encoding())
+    xcode_proj_path = decoded_string(args[0])
     xunique = XUnique(xcode_proj_path, options.verbose)
     if not (options.unique_bool or options.sort_bool):
         print_ng("Uniquify and Sort")

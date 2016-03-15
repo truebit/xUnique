@@ -39,6 +39,7 @@ setup(
     entry_points = {
         'console_scripts' : [ 'xunique=xUnique:main' ],
     },
+    install_requires=["six"],
     description='A converter of the Xcode project file to make merging it much easier in VCS',
     long_description=long_description,
     author='Xiao Wang',
