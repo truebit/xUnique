@@ -249,7 +249,8 @@ Please check:
         last_two = deque([])
 
         def file_dir_order(x):
-            return ('.' in x, x)
+            x = children_pbx_key_ptn.search(x).group()
+            return '.' in x, x
 
         for line in fi_input(self.xcode_pbxproj_path, backup='.sbak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
@@ -288,7 +289,7 @@ Please check:
                 if fc_end_ptn.search(line):
                     if lines:
                         if self.main_group_hex not in last_two[0]:
-                            lines.sort(key=lambda file_str: (children_pbx_key_ptn.search(file_str).group(), file_dir_order))
+                            lines.sort(key=lambda file_str: file_dir_order(file_str))
                         output_u8line(''.join(lines))
                         lines = []
                     child_flag = False
