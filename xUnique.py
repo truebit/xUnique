@@ -31,7 +31,7 @@ from collections import deque
 from filecmp import cmp as filecmp_cmp
 from optparse import OptionParser
 
-def construct_complatibility_layer():
+def construct_compatibility_layer():
     import sys
     if sys.version_info.major == 3:
         class SixPython3Impl(object):
@@ -49,7 +49,7 @@ def construct_complatibility_layer():
         return SixPython2Impl
     else:
         raise RuntimeError("unsupported python version")
-six = construct_complatibility_layer()
+six = construct_compatibility_layer()
 
 
 md5_hex = lambda a_str: hl_md5(a_str.encode('utf-8')).hexdigest().upper()
