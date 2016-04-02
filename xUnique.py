@@ -293,7 +293,7 @@ Please check:
                 if fc_end_ptn.search(line):
                     if lines:
                         if self.main_group_hex not in last_two[0]:
-                            lines.sort(key=lambda file_str: file_dir_order(file_str))
+                            lines.sort(key=file_dir_order)
                         output_u8line(''.join(lines))
                         lines = []
                     child_flag = False
