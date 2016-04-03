@@ -53,6 +53,7 @@ setup(
                  'Topic :: Software Development :: Version Control',
                  'Programming Language :: Objective C',
                  'Programming Language :: Python :: 2',
+                 'Programming Language :: Python :: 3',
                  'Programming Language :: Python :: 2.7'
     ],
 )
