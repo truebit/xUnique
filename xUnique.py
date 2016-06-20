@@ -26,15 +26,14 @@ from hashlib import md5 as hl_md5
 from json import (loads as json_loads, dump as json_dump)
 from fileinput import (input as fi_input, close as fi_close)
 from re import compile as re_compile
-from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding)
+from sys import (argv as sys_argv, getfilesystemencoding as sys_get_fs_encoding, version_info)
 from collections import deque
 from filecmp import cmp as filecmp_cmp
 from optparse import OptionParser
 
 
 def construct_compatibility_layer():
-    import sys
-    if sys.version_info.major == 3:
+    if version_info.major == 3:
         class SixPython3Impl(object):
             PY2 = False
             PY3 = True
@@ -42,7 +41,7 @@ def construct_compatibility_layer():
             string_types = (str,)
 
         return SixPython3Impl
-    elif sys.version_info.major == 2:
+    elif version_info.major == 2:
         class SixPython2Impl(object):
             PY2 = True
             PY3 = False
@@ -51,7 +50,7 @@ def construct_compatibility_layer():
 
         return SixPython2Impl
     else:
-        raise RuntimeError("unsupported python version")
+        raise XUniqueExit("unsupported python version")
 
 
 six = construct_compatibility_layer()
