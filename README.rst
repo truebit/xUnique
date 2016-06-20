@@ -129,6 +129,8 @@ If your project uses CocoaPods AND added ``Pods`` directory to source control, y
 
      $ xunique "${PODS_ROOT}/Pods.xcodeproj"
 
+   **Note**: according to `Cocoapods wiki <https://github.com/CocoaPods/CocoaPods/wiki/Generate-ASCII-format-xcodeproj>`__, make sure `xcproj <https://github.com/0xced/xcproj>`__ is available in ``$PATH``. Otherwise you may get
+
 -  Git hook: add one more command in hook script
 
    .. code-block:: bash

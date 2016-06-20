@@ -166,7 +166,11 @@ Please check:
                 if result:
                     # Backward compatibility using suffix
                     return '{}.xcodeproj'.format(result.group())
-        raise XUniqueExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
+        # project file must be in ASCII format
+        if 'Pods.xcodeproj' in self.xcode_pbxproj_path:
+            raise XUniqueExit("Pods project file should be in ASCII format, but Cocoapods converted Pods project file to XML by default. Install 'xcproj' in your $PATH via brew to fix.")
+        else:
+            raise XUniqueExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
 
     def unique_project(self):
         """iterate all nodes in pbxproj file:
