@@ -74,10 +74,35 @@ It will install a command line script ``xunique`` in dir ``/usr/local/bin`` (mak
 How to use
 ----------
 
-There are many ways to use this script after you installed *xUnique* . I will introduce two:
+There are many ways to use this script after you installed *xUnique* . I will introduce two.
 
-Xcode "build post-action" (Recommended)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+My recommended method is git hook rather than other methods in Xcode, such like build post action or shell script build phase.
+The reason is that Xcode may trigger these actions unnoticed when you've changed some files. That may cause a failure.
+
+You could still use Xcode actions if you do not got such problems. But if you do got strange failures, try git hook method.
+
+Git hook (Recommended)
+~~~~~~~~~~~~~~~~~~~~~~
+
+#. create a git hook in Terminal like:
+
+   .. code-block:: bash
+
+     $ { echo '#!/bin/sh'; echo 'xunique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
+
+#. Add permission ``chmod 755 .git/hooks/pre-commit``
+#. xUnique will be triggered when you trying to commit:
+
+   -  Using option ``-c`` in command would fail the commit operation if
+      project file is modified. Then you can add the modified project
+      file and commit all the files again.
+   -  Option ``-c`` is not activated by default. The commit operation
+      will proceed successfully even if the project file is modified by
+      xUnique. So do not push the commit unless you add the modified
+      project file again and do another commit.
+
+Xcode "build post-action"
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #.  open ``Edit Scheme`` in Xcode (shortcut:
     ``⌘``\ +\ ``Shift``\ +\ ``,``)
@@ -98,26 +123,6 @@ Xcode "build post-action" (Recommended)
     all files.
 #. Demo gif animation is `here <https://github.com/truebit/xUnique#add-xunique-to-xcode-post-action>`__
 
-Git hook
-~~~~~~~~
-
-#. create a git hook in Terminal like: 
-   
-   .. code-block:: bash
-
-     $ { echo '#!/bin/sh'; echo 'xunique path/to/MyProject.xcodeproj'; } > .git/hooks/pre-commit
-
-#. Add permission ``chmod 755 .git/hooks/pre-commit``
-#. xUnique will be triggered when you trying to commit:
-
-   -  Using option ``-c`` in command would fail the commit operation if
-      project file is modified. Then you can add the modified project
-      file and commit all the files again.
-   -  Option ``-c`` is not activated by default. The commit operation
-      will proceed successfully even if the project file is modified by
-      xUnique. So do not push the commit unless you add the modified
-      project file again and do another commit.
-
 CocoaPods users
 ~~~~~~~~~~~~~~~
 
@@ -129,7 +134,7 @@ If your project uses CocoaPods AND added ``Pods`` directory to source control, y
 
      $ xunique "${PODS_ROOT}/Pods.xcodeproj"
 
-   **Note**: according to `Cocoapods wiki <https://github.com/CocoaPods/CocoaPods/wiki/Generate-ASCII-format-xcodeproj>`__, make sure `xcproj <https://github.com/0xced/xcproj>`__ is available in ``$PATH``. Otherwise you may get
+   **Note** : according to `Cocoapods wiki <https://github.com/CocoaPods/CocoaPods/wiki/Generate-ASCII-format-xcodeproj>`__, make sure `xcproj <https://github.com/0xced/xcproj>`__ is available in ``$PATH``. Otherwise you may get
 
 -  Git hook: add one more command in hook script
 
