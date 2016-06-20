@@ -89,7 +89,7 @@ class XUnique(object):
         # check project path
         abs_target_path = path.abspath(target_path)
         if not path.exists(abs_target_path):
-            raise XUniqueExit('Path "{}" not found!'.format(abs_target_path))
+            raise XUniqueExit('Path "',abs_target_path ,'" not found!')
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -405,7 +405,12 @@ Please check:
             self.__set_to_result(parent_hex, target_dependency_hex, self.__result[target_hex]['path'])
         else:
             self.__set_to_result(parent_hex, target_dependency_hex, 'name')
-        self.__unique_container_item_proxy(target_dependency_hex, self.nodes[target_dependency_hex]['targetProxy'])
+        target_proxy = self.nodes[target_dependency_hex].get('targetProxy')
+        if target_proxy:
+            self.__unique_container_item_proxy(target_dependency_hex, target_proxy)
+        else:
+            raise XUniqueExit('PBXTargetDependency item "', target_dependency_hex,
+                              '" is invalid due to lack of "targetProxy" attribute')
 
     def __unique_container_item_proxy(self, parent_hex, container_item_proxy_hex):
         """PBXContainerItemProxy"""
@@ -513,8 +518,9 @@ Please check:
 
 
 class XUniqueExit(SystemExit):
-    def __init__(self, value):
-        value = "\x1B[31m{}\x1B[0m".format(value)
+    def __init__(self, *args):
+        arg_str = ''.join(args)
+        value = "\x1B[31m{}\x1B[0m".format(arg_str)
         super(XUniqueExit, self).__init__(value)
 
 
