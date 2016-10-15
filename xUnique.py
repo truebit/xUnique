@@ -137,7 +137,7 @@ Please check:
         current_node = self.nodes[current_hex]
         isa_type = current_node['isa']
         if isinstance(current_path_key, (list, tuple)):
-            current_path = '/'.join([str(current_node[i]) for i in current_path_key])
+            current_path = '/'.join([six.text_type(current_node[i]) for i in current_path_key])
         elif isinstance(current_path_key, six.string_types):
             if current_path_key in current_node.keys():
                 current_path = current_node[current_path_key]
