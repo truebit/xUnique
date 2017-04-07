@@ -143,6 +143,15 @@ If your project uses CocoaPods AND added ``Pods`` directory to source control, y
 
      $ { echo '#!/bin/sh'; echo 'xunique path/to/MyProject.xcodeproj'; echo 'xunique path/to/Pods.xcodeproj'; } > .git/hooks/pre-commit
 
+
+**Note**: If ``project.pbxproj`` file is in XML format, please install `xcproj <https://github.com/0xced/xcproj>`__ and add it to your $PATH. This would make Cocoapods converting it to Xcode default format automatically:
+
+.. code-block:: bash
+
+    brew install xcproj
+
+`Detailed Cocoapods explanation here <https://github.com/CocoaPods/CocoaPods/wiki/Generate-ASCII-format-xcodeproj>`__
+
 Supported argument options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
