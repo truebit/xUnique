@@ -89,7 +89,7 @@ class XUnique(object):
         # check project path
         abs_target_path = path.abspath(target_path)
         if not path.exists(abs_target_path):
-            raise XUniqueExit('Path "',abs_target_path ,'" not found!')
+            raise XUniqueExit('Path "', abs_target_path, '" not found!')
         elif abs_target_path.endswith('xcodeproj'):
             self.xcodeproj_path = abs_target_path
             self.xcode_pbxproj_path = path.join(abs_target_path, 'project.pbxproj')
@@ -168,7 +168,10 @@ Please check:
                     return '{}.xcodeproj'.format(result.group())
         # project file must be in ASCII format
         if 'Pods.xcodeproj' in self.xcode_pbxproj_path:
-            raise XUniqueExit("Pods project file should be in ASCII format, but Cocoapods converted Pods project file to XML by default. Install 'xcproj' in your $PATH via brew to fix.")
+            raise XUniqueExit(
+                "Pods project file should be in ASCII format, "
+                "but Cocoapods converted Pods project file to XML by default. "
+                "`brew install xcproj` in your $PATH to fix.")
         else:
             raise XUniqueExit("File 'project.pbxproj' is broken. Cannot find PBXProject name.")
 
@@ -198,27 +201,41 @@ Please check:
 
     def substitute_old_keys(self):
         self.vprint('replace UUIDs and remove unused UUIDs')
-        key_ptn = re_compile('(?<=\s)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
+        key_ptn = re_compile('(^\s+|\s+)([0-9A-Z]{24}|[0-9A-F]{32})(?=[\s;])')
         removed_lines = []
+        is_remove_block = False
+        end_block = '{}}};\n'
         for line in fi_input(self.xcode_pbxproj_path, backup='.ubak', inplace=1):
             # project.pbxproj is an utf-8 encoded file
             line = decoded_string(line, 'utf-8')
+            # in block to be removed
+            if is_remove_block:
+                if line == end_block:
+                    # block end, reset
+                    is_remove_block = False
+                    end_block = '{}}};\n'
+                removed_lines.append(line)
+                continue
+            # found UUID
             key_list = key_ptn.findall(line)
             if not key_list:
                 output_u8line(line)
             else:
                 new_line = line
                 # remove line with non-existing element
-                if self.__result.get('to_be_removed') and any(
-                        i for i in key_list if i in self.__result['to_be_removed']):
-                    removed_lines.append(new_line)
-                    continue
                 # remove incorrect entry that somehow does not exist in project node tree
-                elif not all(self.__result.get(uuid) for uuid in key_list):
+                if (self.__result.get('to_be_removed') and any(
+                        i[1] for i in key_list if i in self.__result['to_be_removed'])) or (
+                        not all(self.__result.get(uuid[1]) for uuid in key_list)):
+                    # this line is a block start and will be removed
+                    if new_line.endswith('{\n'):
+                        is_remove_block = True
+                        end_block = end_block.format(key_list[0][0])  # put the leading spaces in end block };
                     removed_lines.append(new_line)
                     continue
                 else:
-                    for key in key_list:
+                    for key_tuple in key_list:
+                        _, key = key_tuple
                         new_key = self.__result[key]['new_key']
                         new_line = new_line.replace(key, new_key)
                     output_u8line(new_line)
